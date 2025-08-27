@@ -65,3 +65,11 @@ async def games_call(callback_query: CallbackQuery):
 
     await callback_query.message.edit_text(text=text,
                                            reply_markup=await games_kb(user_id))
+
+
+# ----- recipes_kb ----- recipes_kb ----- recipes_kb ----- recipes_kb ----- recipes_kb -----
+
+@router.callback_query(F.data == "food_recipe") # віддати рецепт їжі
+async def food_recipe_call(callback_query: CallbackQuery):
+    pass
+    
