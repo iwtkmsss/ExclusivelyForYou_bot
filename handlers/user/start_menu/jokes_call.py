@@ -1,7 +1,7 @@
 from aiogram import Router, F
 from aiogram.types import CallbackQuery
 
-from keyboards import jokes_kb, good_mood_kb, tarological_kb, recipes_kb, reminder_kb, support_kb, games_kb
+from keyboards import jokes_kb, good_mood_kb, tarological_kb, recipes_kb, reminder_kb, support_kb, games_kb, premium_recipes_kb
 
 router = Router()
 
@@ -72,4 +72,22 @@ async def games_call(callback_query: CallbackQuery):
 @router.callback_query(F.data == "food_recipe") # віддати рецепт їжі
 async def food_recipe_call(callback_query: CallbackQuery):
     pass
+
+
+@router.callback_query(F.data == "premium_recipes") # віддати преміум рецепт
+async def premium_recipes_call(callback_query: CallbackQuery):
+    user_id = callback_query.from_user.id
+    text = "premium_recipes TEXT"
+
+    await callback_query.message.edit_text(text=text,
+                                           reply_markup=await premium_recipes_kb(user_id))
+    
+
+@router.callback_query(F.data == "back_to_recipes") # віддати рецепт коктейлю
+async def back_to_recipes_call(callback_query: CallbackQuery):
+    user_id = callback_query.from_user.id
+    text = "recipes TEXT"
+
+    await callback_query.message.edit_text(text=text,
+                                           reply_markup=await recipes_kb(user_id))
     

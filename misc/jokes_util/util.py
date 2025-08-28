@@ -47,12 +47,18 @@ async def get_random_recipe(category: str = None) -> dict:
     return {"content": content, "video": Path(category_path, selected_item, video)}
 
 
-async def get_status_category():
+async def get_status_category() -> dict:
     with open(Path(base_dir, "setting.json"), "r", encoding="utf-8") as f:
         setting = json.load(f)
     used = setting["used"]
+    data = {}
 
-    category_path = Path(base_dir, category)
-    all_files = os.listdir(category_path)
+    subdirectories = [item for item in base_dir.iterdir() if item.is_dir()][:-1]
+    for s in subdirectories:
+        category_name = os.path.basename(s)
+        all_files = os.listdir(s)
+        used_files = used.get(category_name, [])
+        available_files = [file for file in all_files if file not in used_files]
+        data[category_name] = available_files
 
-    return f"Використано {len(used)} з {len(all_files)} рецептів у категорії '{category}'."
+    return data

@@ -2,7 +2,7 @@ from aiogram.utils.keyboard import InlineKeyboardButton, InlineKeyboardMarkup, I
 
 from keyboards import back_to_start_bt
 
-from misc import BDB
+from misc import BDB, get_status_category
 
 jokes_kb = InlineKeyboardMarkup(
     inline_keyboard=[
@@ -67,10 +67,33 @@ async def recipes_kb(tg_id):
 
     kb = InlineKeyboardBuilder()
 
+    kb.row(InlineKeyboardButton(text="👑 Преміум рецепти", callback_data="premium_recipes"))
     kb.row(InlineKeyboardButton(text="🧑‍🍳 Рецепт їжі", callback_data="food_recipe"))
     kb.row(InlineKeyboardButton(text="🍹 Рецепт коктейлю", callback_data="cocktail_recipe"))
     kb.row(InlineKeyboardButton(text="🍮 Рецепт солодощів", callback_data="sweets_recipe"))
     kb.row(back_to_jokes_bt)
+
+    kb.adjust(1)
+
+    return kb.as_markup()
+
+
+translete_world = {
+    "breakfasts": "Cніданки",
+    "dinners": "Вечері",
+    "dishes": "Страви",
+    "salads": "Салати"
+}
+async def premium_recipes_kb(tg_id):
+    user = BDB.get_user(tg_id)
+
+    kb = InlineKeyboardBuilder()
+
+    status_category = await get_status_category()
+    for s in status_category.keys():
+        kb.row(InlineKeyboardButton(text=f"👑 {translete_world[s]} - {len(status_category[s])}", 
+                                    callback_data=f"recipe_{s}" if len(status_category[s]) > 0 else "no_action"))
+    kb.row(InlineKeyboardButton(text="◀️ Назад", callback_data="back_to_recipes"))
 
     kb.adjust(1)
 
