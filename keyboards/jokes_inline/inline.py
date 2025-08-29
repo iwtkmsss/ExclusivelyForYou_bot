@@ -100,6 +100,15 @@ async def premium_recipes_kb(tg_id):
     return kb.as_markup()
 
 
+back_to_premium_recipes_kb = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [
+            InlineKeyboardButton(text="◀️ Назад", callback_data="back_to_premium_recipes")
+        ]
+    ]
+)
+
+
 async def reminder_kb(tg_id):
     user = BDB.get_user(tg_id)
 
