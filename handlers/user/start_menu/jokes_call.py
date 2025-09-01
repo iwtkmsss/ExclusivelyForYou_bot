@@ -2,8 +2,8 @@ from aiogram import Router, F
 from aiogram.types import CallbackQuery, FSInputFile
 
 from keyboards import (jokes_kb, good_mood_kb, tarological_kb, recipes_kb, reminder_kb, \
-                       support_kb, games_kb, premium_recipes_kb, back_to_premium_recipes_kb)
-from misc import get_random_recipe
+                       support_kb, games_kb, premium_recipes_kb, back_to_premium_recipes_kb, food_recipe_kb)
+from misc import get_random_premium_recipe, get_random_recipe, T, DEFAULT_PHOTO_FOR_RECIPE
 
 router = Router()
 
@@ -73,7 +73,27 @@ async def games_call(callback_query: CallbackQuery):
 
 @router.callback_query(F.data == "food_recipe") # віддати рецепт їжі
 async def food_recipe_call(callback_query: CallbackQuery):
-    pass
+    user_id = callback_query.from_user.id
+    recipe = get_random_recipe()
+
+    text = T.FOOD_RECIPE.format(name=recipe.get("name", ""),
+                                ingredients=recipe.get("ingredients", ""),
+                                description=recipe.get("description", ""))
+
+    await callback_query.message.delete()
+    await callback_query.message.answer_photo(caption=text.replace("None", ""),
+                                              photo=recipe.get("photo", DEFAULT_PHOTO_FOR_RECIPE),
+                                              reply_markup=await food_recipe_kb())
+
+
+@router.callback_query(F.data == "back_to_recipes")
+async def back_to_recipes_call(callback_query: CallbackQuery):
+    user_id = callback_query.from_user.id
+    text = "recipes TEXT"
+
+    await callback_query.message.delete()
+    await callback_query.message.answer(text=text,
+                                        reply_markup=await recipes_kb(user_id))
 
 
 @router.callback_query(F.data == "premium_recipes") # віддати преміум рецепт
@@ -83,7 +103,7 @@ async def premium_recipes_call(callback_query: CallbackQuery):
 
     await callback_query.message.edit_text(text=text,
                                            reply_markup=await premium_recipes_kb(user_id))
-    
+
 
 @router.callback_query(F.data == "back_to_recipes")
 async def back_to_recipes_call(callback_query: CallbackQuery):
@@ -99,7 +119,7 @@ async def recipe_call(callback_query: CallbackQuery):
     user_id = callback_query.from_user.id
     recipe_id = callback_query.data.split("_")[1]
 
-    data = await get_random_recipe(recipe_id)
+    data = await get_random_premium_recipe(recipe_id)
 
     text = data['content']
     video = FSInputFile(data['video'])

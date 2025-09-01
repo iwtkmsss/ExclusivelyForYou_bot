@@ -78,7 +78,7 @@ async def recipes_kb(tg_id):
     return kb.as_markup()
 
 
-translete_world = {
+translate_world = {
     "breakfasts": "Cніданки",
     "dinners": "Вечері",
     "dishes": "Страви",
@@ -91,7 +91,7 @@ async def premium_recipes_kb(tg_id):
 
     status_category = await get_status_category()
     for s in status_category.keys():
-        kb.row(InlineKeyboardButton(text=f"👑 {translete_world[s]} - {len(status_category[s])}", 
+        kb.row(InlineKeyboardButton(text=f"👑 {translate_world[s]} - {len(status_category[s])}",
                                     callback_data=f"recipe_{s}" if len(status_category[s]) > 0 else "no_action"))
     kb.row(InlineKeyboardButton(text="◀️ Назад", callback_data="back_to_recipes"))
 
@@ -107,6 +107,13 @@ back_to_premium_recipes_kb = InlineKeyboardMarkup(
         ]
     ]
 )
+
+async def food_recipe_kb():
+    kb = InlineKeyboardBuilder()
+
+    kb.row(InlineKeyboardButton(text="◀️ Назад", callback_data="back_to_recipes"))
+
+    return kb.as_markup()
 
 
 async def reminder_kb(tg_id):

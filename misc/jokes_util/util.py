@@ -6,7 +6,7 @@ import random
 base_dir = Path(Path(__file__).parent)
 
 
-async def get_random_recipe(category: str = None) -> dict:
+async def get_random_premium_recipe(category: str = None) -> dict:
     """
     :param category:
     :return: {content: str, video: Path}
@@ -62,3 +62,21 @@ async def get_status_category() -> dict:
         data[category_name] = available_files
 
     return data
+
+
+def get_random_recipe() -> dict:
+    recipes_path = base_dir / "recipes.json"
+
+    with open(recipes_path, "r", encoding="utf-8") as f:
+        recipes = json.load(f)
+
+    while True:
+        key = random.choice(list(recipes.keys()))
+        if not recipes[key].get("used"):
+            recipes[key]["used"] = True
+            break
+
+    with open(recipes_path, "w", encoding="utf-8") as f:
+        json.dump(recipes, f, ensure_ascii=False, indent=4) # type: ignore[arg-type]
+
+    return recipes[key]
