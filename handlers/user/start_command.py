@@ -14,7 +14,7 @@ async def cmd_start(message: Message):
     start_text = "START TEXT"
     approve_users = [int(x.strip()) for x in BDB.get_setting("tg_id").split(",")]
     user_id = message.from_user.id
-
+    
     if user_id in approve_users:
         if not BDB.get_user(user_id):
             BDB.add_user(user_id)

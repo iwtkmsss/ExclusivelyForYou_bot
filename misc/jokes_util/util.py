@@ -64,7 +64,7 @@ async def get_status_category() -> dict:
     return data
 
 
-def get_random_recipe() -> dict:
+async def get_random_recipe() -> dict:
     recipes_path = base_dir / "recipes.json"
 
     with open(recipes_path, "r", encoding="utf-8") as f:

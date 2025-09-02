@@ -1,6 +1,6 @@
 from aiogram.utils.keyboard import InlineKeyboardButton, InlineKeyboardMarkup, InlineKeyboardBuilder
 
-from keyboards import back_to_start_bt
+from keyboards import back_to_start_bt, paginatios_kb
 
 from misc import BDB, get_status_category
 
@@ -108,12 +108,13 @@ back_to_premium_recipes_kb = InlineKeyboardMarkup(
     ]
 )
 
-async def food_recipe_kb():
-    kb = InlineKeyboardBuilder()
 
-    kb.row(InlineKeyboardButton(text="◀️ Назад", callback_data="back_to_recipes"))
+async def food_recipe_kb(page: int, max_page: int):
+    paginations_kb = await paginatios_kb(page, max_page)
 
-    return kb.as_markup()
+    paginations_kb.row(InlineKeyboardButton(text="◀️ Назад", callback_data="back_to_recipes"))
+
+    return paginations_kb.as_markup()
 
 
 async def reminder_kb(tg_id):

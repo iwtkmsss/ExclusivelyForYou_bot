@@ -191,16 +191,13 @@ from bs4.element import NavigableString
 
 
 def main():
-    path = r"C:\my_fit_fit\ExclusivelyForYou_bot\ExclusivelyForYou_bot\misc\jokes_util\recipes.json"
+    path = r"C:\project\ExclusivelyForYou_bot\misc\jokes_util\recipes.json"
     with open(path, "r", encoding="utf-8") as f:
         recipes = json.load(f)
 
     for i in recipes.keys():
-        recipes[i].update({"used": False})
-
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(recipes, f, ensure_ascii=False, indent=4)
-
+        print(len(recipes[i]["cooking_instructions"]["steps"]))
+        break
 
 if __name__ == "__main__":
     main()
