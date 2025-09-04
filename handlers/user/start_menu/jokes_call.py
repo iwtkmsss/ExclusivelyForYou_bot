@@ -72,7 +72,7 @@ async def games_call(callback_query: CallbackQuery):
                                            reply_markup=await games_kb(user_id))
 
 
-# ----- recipes_kb ----- recipes_kb ----- recipes_kb ----- recipes_kb ----- recipes_kb -----
+# ----- recipes_call ----- recipes_call ----- recipes_call ----- recipes_call ----- recipes_call -----
 
 @router.callback_query(F.data == "food_recipe") # віддати рецепт їжі
 async def food_recipe_call(callback_query: CallbackQuery, state: FSMContext):
@@ -333,6 +333,9 @@ async def sweets_recipe_page_call(callback_query: CallbackQuery, state: FSMConte
     except Exception as e:
         print("Error in FoodRecipes_page_call:", e)
         await callback_query.message.answer("Вибач, сталася помилка при завантаженні сторінки. Спробуй ще раз.")
+
+
+# ----- tarological_call ----- tarological_call ----- tarological_call ----- tarological_call ----- tarological_call -----
 
 
 @router.callback_query(F.data == "horoscope")

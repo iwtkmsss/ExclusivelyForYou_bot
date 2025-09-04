@@ -259,11 +259,39 @@ from bs4.element import NavigableString
 #     print(scraping_url("Овна"))
 
 
-def main():
-    pass
+def scraping_url(url):
+    s = requests.Session()
+    body = {"date1":"02.04.2006","name1":"Діма","gender":"m","purchase":False}
+    response = s.get(url=url, json=body).json()
+
+    rows = [
+        ("Сахасрара",      ("a","b","y1")),
+        ("Аджна",          ("a1","b1","y2")),
+        ("Вішудха",        ("a2","b2","y3")),
+        ("Анахата",        ("a3","b3","y4")),
+        ("Маніпура",       ("i","i","y5")),
+        ("Свадхістана",    ("c2","d2","y6")),
+        ("Муладхара",      ("c","d","y7")),
+        ("Підсумок",       ("y8","y9","y10")),
+    ]
+    out = []
+    for title, (k_phys, k_energy, k_emotion) in rows:
+        out.append({
+            "title": title,
+            "Фізика": response[k_phys],
+            "Енергія": response[k_energy],
+            "Емоції": response[k_emotion],
+        })
+    for o in out:
+        print(o)
+
 
 if __name__ == "__main__":
-    main()
+    url = "https://matrix-doli.com/api/matrix/personal"
+
+    
+
+    scraping_url(url)
 
 
 
