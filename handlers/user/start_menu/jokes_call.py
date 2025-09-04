@@ -1,12 +1,12 @@
-import asyncio
-
 from aiogram import Router, F
-from aiogram.types import CallbackQuery, FSInputFile, InputMediaPhoto
+from aiogram.types import CallbackQuery, FSInputFile
 from aiogram.fsm.context import FSMContext
 
 from keyboards import (jokes_kb, good_mood_kb, tarological_kb, recipes_kb, reminder_kb, \
-                       support_kb, games_kb, premium_recipes_kb, back_to_premium_recipes_kb, food_recipe_kb)
-from misc import get_random_premium_recipe, get_random_recipe, T, DEFAULT_PHOTO_FOR_RECIPE, Paginations, loading_message
+                       support_kb, games_kb, premium_recipes_kb, back_to_premium_recipes_kb, food_recipe_kb,
+                       all_horoscope_kb, back_to_all_horoscope_kb)
+from misc import get_random_premium_recipe, get_random_json_food, T, DEFAULT_PHOTO_FOR_RECIPE, Paginations, \
+    loading_message, get_scraping_zodiac_sign, t_zodiac_signs
 
 router = Router()
 
@@ -79,7 +79,7 @@ async def food_recipe_call(callback_query: CallbackQuery, state: FSMContext):
     try:
         user_id = callback_query.from_user.id
         msg = await loading_message(callback_query.message)
-        recipe = await get_random_recipe()
+        recipe = await get_random_json_food("food_recipe.json")
 
         await state.set_state(Paginations.FoodRecipes)
         await state.update_data(data=recipe)
@@ -87,8 +87,6 @@ async def food_recipe_call(callback_query: CallbackQuery, state: FSMContext):
         text = T.FOOD_RECIPE.format(name=recipe.get("name", ""),
                                     ingredients=recipe.get("ingredients", ""),
                                     description=recipe.get("description", ""))
-
-        
 
         await callback_query.message.answer_photo(caption=text.replace("None", ""),
                                                 photo=recipe.get("photo", DEFAULT_PHOTO_FOR_RECIPE),
@@ -100,7 +98,7 @@ async def food_recipe_call(callback_query: CallbackQuery, state: FSMContext):
 
 
 @router.callback_query(F.data.startswith("page:"), Paginations.FoodRecipes)
-async def FoodRecipes_page_call(callback_query: CallbackQuery, state: FSMContext):
+async def food_recipes_page_call(callback_query: CallbackQuery, state: FSMContext):
     try:
         msg = await loading_message(callback_query.message)
         try:
@@ -127,19 +125,14 @@ async def FoodRecipes_page_call(callback_query: CallbackQuery, state: FSMContext
             return
 
         step = recipe["cooking_instructions"]["steps"][page - 1]
-        text = T.FOOD_RECIPE_STEP.format(step=step["step"],
+        text = T.RECIPE_STEP.format(step=step["step"],
                                         max_step=pages,
                                         text=step["text"])
         
-        images = step.get("images") or [DEFAULT_PHOTO_FOR_RECIPE]
-        media = [InputMediaPhoto(media=i) for i in images]
-        
-        msgs = await callback_query.message.answer_media_group(media=media)
-        await asyncio.sleep(0.5)
-        await msgs[0].edit_caption(
-            caption=text.replace("None", ""),
-            reply_markup=await food_recipe_kb(page, pages)
-        )
+        image = step.get("images") or [DEFAULT_PHOTO_FOR_RECIPE]
+        await callback_query.message.answer_photo(caption=text.replace("None", ""),
+                                                  photo=image[0],
+                                                  reply_markup=await food_recipe_kb(page, pages))
 
         await msg.delete()
         await callback_query.answer()
@@ -202,4 +195,175 @@ async def back_to_premium_recipes_call(callback_query: CallbackQuery):
 
     await callback_query.message.answer(text=text,
                                         reply_markup=await premium_recipes_kb(user_id))
-    
+
+
+@router.callback_query(F.data == "cocktail_recipe")
+async def cocktail_recipes_call(callback_query: CallbackQuery, state: FSMContext):
+    try:
+        user_id = callback_query.from_user.id
+        msg = await loading_message(callback_query.message)
+        recipe = await get_random_json_food("cocktail_recipe.json")
+
+        await state.set_state(Paginations.CocktailRecipes)
+        await state.update_data(data=recipe)
+
+        text = T.COCKTAIL_RECIPES.format(name=recipe.get("name", ""),
+                                    ingredients=recipe.get("ingredients", ""),
+                                    description=recipe.get("description", ""))
+
+        await callback_query.message.answer_photo(caption=text.replace("None", ""),
+                                                  photo=recipe.get("photo", DEFAULT_PHOTO_FOR_RECIPE),
+                                                  reply_markup=await food_recipe_kb(0, len(
+                                                      recipe["cooking_instructions"]["steps"])))
+        await msg.delete()
+    except Exception as e:
+        print("Error in food_recipe_call:", e)
+        await callback_query.message.answer("Вибач, сталася помилка при завантаженні рецепту. Спробуй ще раз.")
+
+
+@router.callback_query(F.data.startswith("page:"), Paginations.CocktailRecipes)
+async def cocktail_recipes_page_call(callback_query: CallbackQuery, state: FSMContext):
+    try:
+        msg = await loading_message(callback_query.message)
+        try:
+            page = int(callback_query.data.split(":")[1])
+        except Exception:
+            await callback_query.answer("Некоректний номер сторінки", show_alert=True)
+            return
+
+        recipe = await state.get_data()
+
+        # Захист від виходу за межі
+        pages = len(recipe["cooking_instructions"]["steps"])
+        page = max(0, min(page, pages))
+
+        if page == 0:
+            msg = await loading_message(callback_query.message)
+            text = T.FOOD_RECIPE.format(name=recipe.get("name", ""),
+                                        ingredients=recipe.get("ingredients", ""),
+                                        description=recipe.get("description", ""))
+            await callback_query.message.answer_photo(caption=text.replace("None", ""),
+                                                      photo=recipe.get("photo", DEFAULT_PHOTO_FOR_RECIPE),
+                                                      reply_markup=await food_recipe_kb(0, len(
+                                                          recipe["cooking_instructions"]["steps"])))
+            await msg.delete()
+            return
+
+        step = recipe["cooking_instructions"]["steps"][page - 1]
+        text = T.RECIPE_STEP.format(step=step["step"],
+                                         max_step=pages,
+                                         text=step["text"])
+
+        image = step.get("images") or [DEFAULT_PHOTO_FOR_RECIPE]
+        await callback_query.message.answer_photo(caption=text.replace("None", ""),
+                                                  photo=image[0],
+                                                  reply_markup=await food_recipe_kb(page, pages))
+
+        await msg.delete()
+        await callback_query.answer()
+    except Exception as e:
+        print("Error in FoodRecipes_page_call:", e)
+        await callback_query.message.answer("Вибач, сталася помилка при завантаженні сторінки. Спробуй ще раз.")
+
+
+@router.callback_query(F.data == "sweets_recipe")
+async def sweets_recipes_call(callback_query: CallbackQuery, state: FSMContext):
+    try:
+        user_id = callback_query.from_user.id
+        msg = await loading_message(callback_query.message)
+        recipe = await get_random_json_food("sweets_recipe.json")
+
+        await state.set_state(Paginations.SweetsRecipe)
+        await state.update_data(data=recipe)
+
+        text = T.SWEETS_RECIPE.format(name=recipe.get("name", ""),
+                                    ingredients=recipe.get("ingredients", ""),
+                                    description=recipe.get("description", ""))
+
+        await callback_query.message.answer_photo(caption=text.replace("None", ""),
+                                                  photo=recipe.get("photo", DEFAULT_PHOTO_FOR_RECIPE),
+                                                  reply_markup=await food_recipe_kb(0, len(
+                                                      recipe["cooking_instructions"]["steps"])))
+        await msg.delete()
+    except Exception as e:
+        print("Error in food_recipe_call:", e)
+        await callback_query.message.answer("Вибач, сталася помилка при завантаженні рецепту. Спробуй ще раз.")
+
+
+@router.callback_query(F.data.startswith("page:"), Paginations.SweetsRecipe)
+async def sweets_recipe_page_call(callback_query: CallbackQuery, state: FSMContext):
+    try:
+        msg = await loading_message(callback_query.message)
+        try:
+            page = int(callback_query.data.split(":")[1])
+        except Exception:
+            await callback_query.answer("Некоректний номер сторінки", show_alert=True)
+            return
+
+        recipe = await state.get_data()
+
+        # Захист від виходу за межі
+        pages = len(recipe["cooking_instructions"]["steps"])
+        page = max(0, min(page, pages))
+
+        if page == 0:
+            msg = await loading_message(callback_query.message)
+            text = T.FOOD_RECIPE.format(name=recipe.get("name", ""),
+                                        ingredients=recipe.get("ingredients", ""),
+                                        description=recipe.get("description", ""))
+            await callback_query.message.answer_photo(caption=text.replace("None", ""),
+                                                      photo=recipe.get("photo", DEFAULT_PHOTO_FOR_RECIPE),
+                                                      reply_markup=await food_recipe_kb(0, len(
+                                                          recipe["cooking_instructions"]["steps"])))
+            await msg.delete()
+            return
+
+        step = recipe["cooking_instructions"]["steps"][page - 1]
+        text = T.RECIPE_STEP.format(step=step["step"],
+                                         max_step=pages,
+                                         text=step["text"])
+
+        image = step.get("images") or [DEFAULT_PHOTO_FOR_RECIPE]
+        await callback_query.message.answer_photo(caption=text.replace("None", ""),
+                                                  photo=image[0],
+                                                  reply_markup=await food_recipe_kb(page, pages))
+
+        await msg.delete()
+        await callback_query.answer()
+    except Exception as e:
+        print("Error in FoodRecipes_page_call:", e)
+        await callback_query.message.answer("Вибач, сталася помилка при завантаженні сторінки. Спробуй ще раз.")
+
+
+@router.callback_query(F.data == "horoscope")
+async def horoscope_call(callback_query: CallbackQuery):
+    user_id = callback_query.from_user.id
+    text = "horoscope TEXT"
+
+    await callback_query.message.edit_text(text, reply_markup=await all_horoscope_kb())
+
+
+@router.callback_query(F.data == "back_to_tarological")
+async def back_to_tarological_call(callback_query: CallbackQuery):
+    user_id = callback_query.from_user.id
+    text = "tarological TEXT"
+
+    await callback_query.message.edit_text(text=text,
+                                           reply_markup=await tarological_kb(user_id))
+
+
+@router.callback_query(F.data.startswith("zodiac_"))
+async def zodiac_call(callback_query: CallbackQuery):
+    zodiac = callback_query.data.split("zodiac_")[1]
+    data = await get_scraping_zodiac_sign(t_zodiac_signs[zodiac]["name"])
+
+    text = T.ZODIAC.format(title=t_zodiac_signs[zodiac]["sign"] + " " + data.get("title", ""),
+                                     text=data.get("text", ""))
+
+    await callback_query.message.edit_text(text=text, reply_markup=back_to_all_horoscope_kb)
+
+
+@router.callback_query(F.data == "back_to_all_horoscope")
+async def back_to_all_horoscope_call(callback_query: CallbackQuery):
+    await horoscope_call(callback_query)
+

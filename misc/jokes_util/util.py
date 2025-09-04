@@ -1,10 +1,29 @@
+import re
 from pathlib import Path
 import os
 import json
 import random
 
+import requests
+from bs4 import BeautifulSoup
+
 base_dir = Path(Path(__file__).parent)
 
+
+t_zodiac_signs = {
+    "Leo": {"name": "Лева", "sign": "♌️"},
+    "Aries": {"name": "Овна", "sign": "♈️"},
+    "Gemini": {"name": "Близнюків", "sign": "♊️"},
+    "Cancer": {"name": "Рака", "sign": "♋️"},
+    "Taurus": {"name": "Тельця", "sign": "♉️"},
+    "Virgo": {"name": "Діви", "sign": "♍️"},
+    "Libra": {"name": "Терезів", "sign": "♎️"},
+    "Scorpio": {"name": "Скорпіона", "sign": "♏️"},
+    "Sagittarius": {"name": "Стрільця", "sign": "♐️"},
+    "Capricorn": {"name": "Козерога", "sign": "♑️"},
+    "Aquarius": {"name": "Водолія", "sign": "♒️"},
+    "Pisces": {"name": "Риб", "sign": "♓️"}
+}
 
 async def get_random_premium_recipe(category: str = None) -> dict:
     """
@@ -64,8 +83,8 @@ async def get_status_category() -> dict:
     return data
 
 
-async def get_random_recipe() -> dict:
-    recipes_path = base_dir / "recipes.json"
+async def get_random_json_food(path):
+    recipes_path = base_dir / path
 
     with open(recipes_path, "r", encoding="utf-8") as f:
         recipes = json.load(f)
@@ -80,3 +99,32 @@ async def get_random_recipe() -> dict:
         json.dump(recipes, f, ensure_ascii=False, indent=4) # type: ignore[arg-type]
 
     return recipes[key]
+
+
+async def get_scraping_zodiac_sign(zodiac_sign) -> dict:
+    url = "https://gosta.media/horoskop-na-sohodni/"
+    headers = {
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36"
+    }
+
+    s = requests.Session()
+    response = s.get(url=url, headers=headers)
+    soup = BeautifulSoup(response.text, "lxml")
+
+    main_link = "https://gosta.media" + (soup.find("div", class_="container block-with-cols").find("a", class_="post-card").get('href'))
+
+    response = s.get(url=main_link, headers=headers)
+    soup = BeautifulSoup(response.text, "lxml")
+
+    h2 = soup.find("h2", string=re.compile(zodiac_sign))
+    if h2:
+        date_sign = h2.get_text(strip=True)  # "Гороскоп на 4 вересня 2025 року для Тельця"
+        p = h2.find_next_sibling("p")  # первый параграф после h2
+        text = p.get_text(" ", strip=True) if p else None
+
+        result = {
+            "title": date_sign,
+            "text": text
+        }
+        return result
+    return {}

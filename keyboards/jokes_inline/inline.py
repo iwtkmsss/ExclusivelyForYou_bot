@@ -2,7 +2,7 @@ from aiogram.utils.keyboard import InlineKeyboardButton, InlineKeyboardMarkup, I
 
 from keyboards import back_to_start_bt, paginatios_kb
 
-from misc import BDB, get_status_category
+from misc import BDB, get_status_category, t_zodiac_signs
 
 jokes_kb = InlineKeyboardMarkup(
     inline_keyboard=[
@@ -160,3 +160,28 @@ async def games_kb(tg_id):
     kb.adjust(1)
 
     return kb.as_markup()
+
+
+back_to_tarological_bt = InlineKeyboardButton(text="◀️ Назад", callback_data="back_to_tarological")
+
+async def all_horoscope_kb():
+    kb = InlineKeyboardBuilder()
+
+    for zodiac_sing in t_zodiac_signs.keys():
+        text = t_zodiac_signs[zodiac_sing]["sign"] + " " + t_zodiac_signs[zodiac_sing]["name"]
+        kb.row(InlineKeyboardButton(text=text, callback_data=f"zodiac_{zodiac_sing}"))
+
+    kb.adjust(2)
+
+    kb.row(back_to_tarological_bt)
+
+    return kb.as_markup()
+
+
+back_to_all_horoscope_kb = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [
+            InlineKeyboardButton(text="◀️ Назад", callback_data="back_to_all_horoscope")
+        ]
+    ]
+)

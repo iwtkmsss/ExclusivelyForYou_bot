@@ -171,7 +171,8 @@ from bs4.element import NavigableString
 #
 #
 # def main():
-#     with open("recipes.json", "r", encoding="utf-8") as file:
+#     path = r"C:\my_fit_fit\ExclusivelyForYou_bot\ExclusivelyForYou_bot\misc\jokes_util\sweets_recipe.json"
+#     with open(path, "r", encoding="utf-8") as file:
 #         recipes = json.load(file)
 #
 #     args_list = [(k, recipes[k]["link"]) for k in recipes.keys()]
@@ -184,20 +185,82 @@ from bs4.element import NavigableString
 #         else:
 #             recipes[key].setdefault("_error", True)
 #
-#     with open("recipess.json", "w+", encoding="utf-8") as file:
+#     with open(path, "w+", encoding="utf-8") as file:
 #         json.dump(recipes, file, indent=4, ensure_ascii=False)
 #     # (scraping_url("https://cookpad.com/ua/recipes/24988036"))
 #
+#
+#
+# def scraping_url(url):
+#     s = requests.Session()
+#     response = s.get(url=url)
+#     soup = BeautifulSoup(response.text, "lxml")
+#
+#     all_li = soup.find("ul", id="search-recipes-list").find_all("li", "block-link card border-cookpad-gray-400 border-t-0 border-l-0 border-r-0 border-b flex lg:flex-row-reverse m-0 rounded-none overflow-hidden ranked-list__item xs:border-b-none xs:mb-sm xs:rounded-lg hover:bg-cookpad-gray-200 print:bg-cookpad-white")
+#     urls = {}
+#     for li in all_li:
+#         id_ = li.get("id")
+#         url = "https://cookpad.com" + li.find("a", class_="block-link__main").get("href")
+#         urls[id_] = {"link": url}
+#
+#     return urls
+#
+# def main():
+#     urls = {}
+#     for i in range(1, 74):
+#         res = scraping_url(f"https://cookpad.com/ua/search/%D0%B4%D0%B5%D1%81%D0%B5%D1%80%D1%82%D0%B8?page={i}")
+#         urls.update(res)
+#
+#     with open("C:\my_fit_fit\ExclusivelyForYou_bot\ExclusivelyForYou_bot\misc\jokes_util\sweets_recipe.json", "w+", encoding="utf-8") as f:
+#         json.dump(urls, f, ensure_ascii=False, indent=4)
+
+
+# def main():
+#     path = r"C:\my_fit_fit\ExclusivelyForYou_bot\ExclusivelyForYou_bot\misc\jokes_util\sweets_recipe.json"
+#     with open(path, "r", encoding="utf-8") as f:
+#         datas = json.load(f)
+#
+#     for data in datas.keys():
+#         datas[data]["used"] = False
+#
+#     with open(path, "w", encoding="utf-8") as f:
+#         json.dump(datas, f, ensure_ascii=False, indent=4)
+
+
+# def scraping_url(zodiac_sign):
+#     url = "https://gosta.media/horoskop-na-sohodni/"
+#     headers = {
+#         "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36"
+#     }
+#
+#     s = requests.Session()
+#     response = s.get(url=url, headers=headers)
+#     soup = BeautifulSoup(response.text, "lxml")
+#
+#     main_link = "https://gosta.media" + (soup.find("div", class_="container block-with-cols").find("a", class_="post-card").get('href'))
+#
+#     response = s.get(url=main_link, headers=headers)
+#     soup = BeautifulSoup(response.text, "lxml")
+#
+#     h2 = soup.find("h2", string=re.compile(zodiac_sign))
+#     if h2:
+#         date_sign = h2.get_text(strip=True)  # "Гороскоп на 4 вересня 2025 року для Тельця"
+#         p = h2.find_next_sibling("p")  # первый параграф после h2
+#         text = p.get_text(" ", strip=True) if p else None
+#
+#         result = {
+#             "title": date_sign,
+#             "text": text
+#         }
+#         return result
+#     return None
+
+# def main():
+#     print(scraping_url("Овна"))
 
 
 def main():
-    path = r"C:\project\ExclusivelyForYou_bot\misc\jokes_util\recipes.json"
-    with open(path, "r", encoding="utf-8") as f:
-        recipes = json.load(f)
-
-    for i in recipes.keys():
-        print(len(recipes[i]["cooking_instructions"]["steps"]))
-        break
+    pass
 
 if __name__ == "__main__":
     main()
