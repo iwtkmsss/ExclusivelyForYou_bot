@@ -6,6 +6,8 @@ import os
 import re
 from bs4.element import NavigableString
 
+from misc.jokes_util.util import get_matrix_data
+
 # AD_PATTERNS = [
 #     r'\binstagram\b', r'\btik[\-\s]?tok\b', r'\bfacebook\b', r'\byoutube\b',
 #     r'\btelegram\b', r'телеграм', r'канал',
@@ -259,39 +261,42 @@ from bs4.element import NavigableString
 #     print(scraping_url("Овна"))
 
 
-def scraping_url(url):
-    s = requests.Session()
-    body = {"date1":"02.04.2006","name1":"Діма","gender":"m","purchase":False}
-    response = s.get(url=url, json=body).json()
-
-    rows = [
-        ("Сахасрара",      ("a","b","y1")),
-        ("Аджна",          ("a1","b1","y2")),
-        ("Вішудха",        ("a2","b2","y3")),
-        ("Анахата",        ("a3","b3","y4")),
-        ("Маніпура",       ("i","i","y5")),
-        ("Свадхістана",    ("c2","d2","y6")),
-        ("Муладхара",      ("c","d","y7")),
-        ("Підсумок",       ("y8","y9","y10")),
-    ]
-    out = []
-    for title, (k_phys, k_energy, k_emotion) in rows:
-        out.append({
-            "title": title,
-            "Фізика": response[k_phys],
-            "Енергія": response[k_energy],
-            "Емоції": response[k_emotion],
-        })
-    for o in out:
-        print(o)
+# def scraping_url(body):
+#     """
+#     body -: {"date1": "dd.mm.yyyy", "name1": "name", "gender": "m" || "f"}
+#
+#     :param body:
+#     :return:
+#     """
+#
+#     url = "https://matrix-doli.com/api/matrix/personal"
+#     s = requests.Session()
+#     body["purchase"] = False
+#     response = s.get(url=url, json=body).json()
+#     return response
+#
+# if __name__ == "__main__":
+#     scraping_url()
 
 
-if __name__ == "__main__":
-    url = "https://matrix-doli.com/api/matrix/personal"
+body = {"date1": "02.04.2006", "name1": "Dima", "gender": "m"}
 
-    
+data = get_matrix_data(body)["data"][0]["result"]
 
-    scraping_url(url)
-
-
-
+print(
+data.get("title"),
+"\n",
+data["intro"].get("text"),
+"\n",
+data["positive"].get("title"),
+"\n",
+data["positive"].get("text"),
+"\n",
+data["negative"].get("title"),
+"\n",
+data["negative"].get("text"),
+"\n",
+data["communication"].get("title"),
+"\n",
+data["communication"].get("text")
+)

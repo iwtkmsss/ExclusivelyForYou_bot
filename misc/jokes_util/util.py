@@ -1,9 +1,11 @@
+import base64
 import re
 from pathlib import Path
 import os
 import json
 import random
 
+import cairosvg
 import requests
 from bs4 import BeautifulSoup
 
@@ -128,3 +130,100 @@ async def get_scraping_zodiac_sign(zodiac_sign) -> dict:
         }
         return result
     return {}
+
+
+async def get_matrix_data(body):
+    """
+        body -: {"date1": "dd.mm.yyyy", "name1": "name", "gender": "m" || "f"}
+
+        :param body:
+        :return:
+        """
+
+    url = "https://matrix-doli.com/api/matrix/personal"
+    s = requests.Session()
+    body["purchase"] = False
+    response = s.get(url=url, json=body).json()
+    return response
+
+
+async def chakra_matrix_html(data: dict) -> str:
+    rows = [
+        ("Сахасрара",   ("a","b","y1"),   "Місія",                         "7"),
+        ("Аджна",       ("a1","b1","y2"), "Доля, егрегори",                "6"),
+        ("Вішудха",     ("a2","b2","y3"), "Доля, егрегори",                "5"),
+        ("Анахата",     ("a3","b3","y4"), "Відносини, картина світу",      "4"),
+        ("Маніпура",    ("i","i","y5"),   "Статус, володіння",             "3"),
+        ("Свадхістана", ("c2","d2","y6"), "Дитяче кохання та радість",     "2"),
+        ("Муладхара",   ("c","d","y7"),   "Тіло, матерія",                  "1"),
+        ("Підсумок",    ("y8","y9","y10"),"Загальне енергополе",           "—"),
+    ]
+
+    def fmt(n):
+        return f"{n:>4}"
+
+    lines = ["┌────────────────────────────────────┬────┬──────┬──────┐",
+             "│ НАЙМЕНУВАННЯ ЧАКРИ                │ ФІЗ. │ ЕНЕРГ. │ ЕМОЦ. │",
+             "├────────────────────────────────────┼────┼──────┼──────┤"]
+
+    for title, (k1, k2, k3), subtitle, num in rows:
+        v1, v2, v3 = data[k1], data[k2], data[k3]
+        head = f"{num} {title}"
+        sub  = subtitle
+        # перший рядок: назва
+        lines.append(f"│ {head:<34} │ {fmt(v1)} │ {fmt(v2)} │ {fmt(v3)} │")
+        # другий рядок: підзаголовок (без чисел)
+        lines.append(f"│ {sub:<34} │      │       │       │")
+        lines.append("├────────────────────────────────────┼────┼──────┼──────┤")
+
+    # заміна останнього роздільника на нижню рамку
+    lines[-1] = "└────────────────────────────────────┴────┴──────┴──────┘"
+
+    table = "\n".join(lines)
+
+    return (
+        f"<b>{data.get('title')}</b>\n\n"
+        f"<pre>{table}</pre>"
+    )
+
+
+def _fix_opacity_percents(svg_text: str) -> str:
+    # stroke-opacity="30%" | =30% | style="...opacity:30%;..."
+    def repl_attr_q(m):  # with quotes
+        name, q, num = m.group(1), m.group(2), m.group(3)
+        return f'{name}={q}{float(num)/100:.6f}{q}'
+    svg_text = re.sub(r'(?i)\b([a-z-]*opacity)\b\s*=\s*(["\'])(\d+(?:\.\d+)?)\s*%\s*\2',
+                      repl_attr_q, svg_text)
+
+    def repl_attr(m):  # no quotes
+        name, num = m.group(1), m.group(2)
+        return f'{name}="{float(num)/100:.6f}"'
+    svg_text = re.sub(r'(?i)\b([a-z-]*opacity)\b\s*=\s*(\d+(?:\.\d+)?)\s*%',
+                      repl_attr, svg_text)
+
+    def repl_style(m):  # in style
+        name, num, tail = m.group(1), m.group(2), m.group(3) or ''
+        return f'{name}:{float(num)/100:.6f}{tail}'
+    svg_text = re.sub(r'(?i)\b([a-z-]*opacity)\b\s*:\s*(\d+(?:\.\d+)?)\s*%(;)?',
+                      repl_style, svg_text)
+    return svg_text
+
+def _fix_rem_to_px(svg_text: str, root_font_px: float = 16.0) -> str:
+    # Переводимо будь-яке "<num>rem" → "<num*root>px"
+    return re.sub(
+        r'(?i)(-?\d+(?:\.\d+)?)\s*rem\b',
+        lambda m: f'{float(m.group(1))*root_font_px:.6f}px',
+        svg_text
+    )
+
+async def svg_b64_to_png_bytes(b64: str) -> bytes:
+    # знімаємо префікс data:
+    b64 = re.sub(r'^data:image/svg\+xml;base64,', '', b64, flags=re.I)
+    svg_text = base64.b64decode(b64).decode('utf-8', 'replace')
+
+    # фиксимо проблемні місця
+    svg_text = _fix_opacity_percents(svg_text)
+    svg_text = _fix_rem_to_px(svg_text, root_font_px=16.0)
+
+    # рендер
+    return cairosvg.svg2png(bytestring=svg_text.encode('utf-8'))

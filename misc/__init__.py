@@ -3,4 +3,4 @@ from .jokes_util import get_random_premium_recipe, get_status_category, get_rand
                         t_zodiac_signs
 from .util import loading_message
 from .texts import T
-from .FSM import Paginations
+from .FSM import Paginations, MatrixOfDestiny

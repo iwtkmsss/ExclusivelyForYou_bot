@@ -54,7 +54,7 @@ async def tarological_kb(tg_id):
     kb = InlineKeyboardBuilder()
 
     kb.row(InlineKeyboardButton(text="✨ Гороскоп", callback_data="horoscope"))
-    kb.row(InlineKeyboardButton(text="🃏 Карта Таро дня", callback_data="tarot_card"))
+    kb.row(InlineKeyboardButton(text="🔯 Матриця долі", callback_data="matrix_destiny"))
     kb.row(back_to_jokes_bt)
 
     kb.adjust(1)
@@ -185,3 +185,40 @@ back_to_all_horoscope_kb = InlineKeyboardMarkup(
         ]
     ]
 )
+
+
+async def matrix_destiny_kb():
+    kb = InlineKeyboardBuilder()
+
+    kb.row(InlineKeyboardButton(text="👩🏽 Персональна", callback_data="matrix_destiny_personal"))
+    kb.row(InlineKeyboardButton(text="👫 Сумісність", callback_data="matrix_destiny_compatibility"))
+    kb.row(back_to_tarological_bt)
+
+    return kb.as_markup()
+
+
+back_to_m_d_personal_kb = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [
+            InlineKeyboardButton(text="◀️ Назад", callback_data="back_to_m_d_personal")
+        ]
+    ]
+)
+
+
+async def matrix_destiny_personal_kb():
+    kb = InlineKeyboardBuilder()
+
+    kb.row(InlineKeyboardButton(text="👨🏻‍💼 Чоловік", callback_data="m_d_personal_man"))
+    kb.row(InlineKeyboardButton(text="👩🏽‍💼 Жінка", callback_data="m_d_personal_woman"))
+    kb.row(InlineKeyboardButton(text="◀️ Назад", callback_data="back_to_matrix_destiny"))
+
+    return kb.as_markup()
+
+
+async def matrix_paginatios_kb(page: int, max_page: int):
+    paginations_kb = await paginatios_kb(page, max_page)
+
+    paginations_kb.row(InlineKeyboardButton(text="◀️ Назад", callback_data="back_to_m_d_personal"))
+
+    return paginations_kb.as_markup()
