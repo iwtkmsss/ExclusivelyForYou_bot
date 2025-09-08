@@ -6,7 +6,7 @@ import os
 import re
 from bs4.element import NavigableString
 
-from misc.jokes_util.util import get_matrix_data
+from misc.jokes_util.util import get_personal_matrix_data
 
 # AD_PATTERNS = [
 #     r'\binstagram\b', r'\btik[\-\s]?tok\b', r'\bfacebook\b', r'\byoutube\b',
@@ -279,24 +279,19 @@ from misc.jokes_util.util import get_matrix_data
 #     scraping_url()
 
 
-body = {"date1": "02.04.2006", "name1": "Dima", "gender": "m"}
 
-data = get_matrix_data(body)["data"][0]["result"]
+total = 0
 
-print(
-data.get("title"),
-"\n",
-data["intro"].get("text"),
-"\n",
-data["positive"].get("title"),
-"\n",
-data["positive"].get("text"),
-"\n",
-data["negative"].get("title"),
-"\n",
-data["negative"].get("text"),
-"\n",
-data["communication"].get("title"),
-"\n",
-data["communication"].get("text")
-)
+for root, dirs, files in os.walk(".", topdown=True):
+    # ігноруємо папку .venv
+    dirs[:] = [d for d in dirs if d != ".venv"]
+    for name in files:
+        if name.endswith(".py") and name != "__init__.py":
+            path = os.path.join(root, name)
+            try:
+                with open(path, "r", encoding="utf-8", errors="ignore") as f:
+                    total += sum(1 for _ in f)
+            except Exception:
+                pass
+
+print(total)

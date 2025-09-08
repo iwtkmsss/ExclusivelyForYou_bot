@@ -2,14 +2,18 @@ import re
 
 from aiogram import Router, F
 from aiogram.types import CallbackQuery, FSInputFile
+from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
+from numpy.distutils.fcompiler.lahey import LaheyFCompiler
 
 from keyboards import (jokes_kb, good_mood_kb, tarological_kb, recipes_kb, reminder_kb, \
                        support_kb, games_kb, premium_recipes_kb, back_to_premium_recipes_kb, food_recipe_kb,
                        all_horoscope_kb, back_to_all_horoscope_kb, matrix_destiny_kb, back_to_m_d_personal_kb,
-                       matrix_destiny_personal_kb, matrix_paginatios_kb)
+                       matrix_destiny_personal_kb, personal_data_display_kb, dd_personal_qualities_kb,
+                       back_to_personal_qualities_kb, compatibility_data_display_kb)
 from misc import get_random_premium_recipe, get_random_json_food, T, DEFAULT_PHOTO_FOR_RECIPE, Paginations, \
     loading_message, get_scraping_zodiac_sign, t_zodiac_signs, MatrixOfDestiny
+from misc.jokes_util.util import chakra_matrix_html, get_personal_matrix_data, get_compatibility_matrix_data
 
 router = Router()
 
@@ -395,6 +399,10 @@ async def matrix_destiny__call(callback_query: CallbackQuery, state: FSMContext)
                                                reply_markup=await matrix_destiny_personal_kb())
     elif matrix_destiny == "compatibility":
         await state.set_state(MatrixOfDestiny.Compatibility)
+        await state.update_data(message_id=callback_query.message.message_id)
+
+        await callback_query.message.edit_text(text=T.MatrixOfDestinyCompatibility,
+                                               reply_markup=back_to_all_horoscope_kb)
     else:
         pass
 
@@ -418,60 +426,169 @@ async def m_d_personal_call(callback_query: CallbackQuery, state: FSMContext):
     await state.update_data(msg_id=callback_query.message.message_id)
 
 
-@router.callback_query(F.data == "back_to_m_d_personal", MatrixOfDestiny.Personal)
+@router.callback_query(F.data == "back_to_m_d_personal",
+                       StateFilter(MatrixOfDestiny.Personal, MatrixOfDestiny.DataDisplay))
 async def back_to_m_d_personal_call(callback_query: CallbackQuery, state: FSMContext):
-    await callback_query.message.edit_text(text=T.MatrixOfDestinyChoiceSex,
+    await state.clear()
+    await callback_query.message.delete()
+
+    await callback_query.message.answer(text=T.MatrixOfDestinyChoiceSex,
                                            reply_markup=await matrix_destiny_personal_kb())
 
 
-@router.callback_query(F.data.startswith("page:"), Paginations.PaginationPersonalMatrix)
+def text_to_norm(t):
+    t = re.sub(r'</?p\b[^>]*>', '', t, flags=re.I)
+    return t
+
+
+@router.callback_query(F.data.startswith("pdd:"), MatrixOfDestiny.DataDisplay)
 async def matrix_personal_page_call(callback_query: CallbackQuery, state: FSMContext):
     try:
-        state_data = await state.get_data()
+        page = callback_query.data.split(":")[1]
 
-        try:
-            page = int(callback_query.data.split(":")[1])
-        except Exception:
-            await callback_query.answer("Некоректний номер сторінки", show_alert=True)
+        state_data = await state.get_data()
+        position = state_data.get("position")
+        if page == position:
             return
 
-        recipe = await state.get_data()
+        await callback_query.message.delete()
+        msg = await loading_message(callback_query.message)
 
-        # Захист від виходу за межі
-        page = max(0, min(page, 2))
+        await state.update_data(position=page)
 
-        if page == 0:
-            await callback_query.message.delete()
+        response = await get_personal_matrix_data(state_data.get("body"))
+        result_data = response["data"][0]["result"]
+
+        if page == "photo":
             await callback_query.message.answer_photo(photo=state_data.get("photo"),
-                                                      reply_markup=await matrix_paginatios_kb(page, 2))
-        elif page == 1:
-            await callback_query.message.delete()
-            await callback_query.message.answer(text=state_data.get("text"),
-                                                reply_markup=await matrix_paginatios_kb(page, 2))
-        elif page == 2:
-            await callback_query.message.delete()
+                                                      reply_markup=await personal_data_display_kb())
+        elif page == "table":
+            text = await chakra_matrix_html(response)
 
-            data = state_data["data"][0]["result"]
-            title = state_data["data"][0].get("title")
-
-            def text_to_norm(t):
-                t = re.sub(r'</?p\b[^>]*>', '', t, flags=re.I)
-                return t
-
-            text = T.MATRIX_SPECIAL_QUALITIES.format(
-                title=title,
-                intro_text=text_to_norm(data["intro"].get("text")),
-
-                positive_title=data["positive"].get("title"),
-                positive_text=text_to_norm(data["positive"].get("text")),
-                negative_title=data["negative"].get("title"),
-                negative_text=text_to_norm(data["negative"].get("text")),
-                communication_title=data["communication"].get("title"),
-                communication_text=text_to_norm(data["communication"].get("text")),
-            )
             await callback_query.message.answer(text=text,
-                                                reply_markup=await matrix_paginatios_kb(page, 2))
+                                                reply_markup=await personal_data_display_kb())
+        elif page == "personal_qualities":
+            text = "<b>{title}</b>\n\n{text}".format(title=response["data"][0].get("title"),
+                                                     text=text_to_norm(result_data["intro"].get("text")))
+
+            await callback_query.message.answer(text=(text + "\n\n⬇️ Обери знизу :)"),
+                                                reply_markup=await personal_data_display_kb())
+        elif page == "positive":
+            text = "<b>{title}</b>\n\n{text}"
+
+            await callback_query.message.answer(text=text.format(
+                title=result_data["positive"].get("title"),
+                text=text_to_norm(result_data["positive"].get("text"))),
+                reply_markup=back_to_personal_qualities_kb)
+        elif page == "negative":
+            text = "<b>{title}</b>\n\n{text}"
+
+            await callback_query.message.answer(text=text.format(
+                title=result_data["negative"].get("title"),
+                text=text_to_norm(result_data["negative"].get("text"))),
+                reply_markup=back_to_personal_qualities_kb)
+        elif page == "communication":
+            text = "<b>{title}</b>\n\n{text}"
+
+            await callback_query.message.answer(text=text.format(
+                title=result_data["communication"].get("title"),
+                text=text_to_norm(result_data["communication"].get("text"))),
+                reply_markup=back_to_personal_qualities_kb)
+        elif page == "health":
+            text = text_to_norm(response["data"][1]["result"]["sahasrara"].get("text"))
+
+            await callback_query.message.answer(text=text,
+                                                reply_markup=await personal_data_display_kb())
+        elif page == "past_life":
+            text = text_to_norm(response["data"][2]["result"][0].get("text"))
+
+            await callback_query.message.answer(text=text,
+                                                reply_markup=await personal_data_display_kb())
+        elif page == "appointment":
+            text = text_to_norm(response["data"][3]["result"]["intro"].get("text"))
+
+            await callback_query.message.answer(text=text,
+                                                reply_markup=await personal_data_display_kb())
+        elif page == "forecast_year":
+            text_data = response["data"][12]["result"]["20"]
+
+            title = text_to_norm(text_data.get("title"))
+            text = text_to_norm(text_data.get("text"))
+
+            await callback_query.message.answer(text=f"<b>{title}</b>\n\n{text}",
+                                                reply_markup=await personal_data_display_kb())
+
+        await msg.delete()
         await callback_query.answer()
     except Exception as e:
         print("Error in FoodRecipes_page_call:", e)
-        await callback_query.message.answer("Вибач, сталася помилка при завантаженні сторінки. Спробуй ще раз.")
+        await callback_query.message.answer(
+            "😥 Вибач, сталася помилка. Спробуй ще раз.")
+
+
+@router.callback_query(F.data == "back_to_data_display", MatrixOfDestiny.DataDisplay)
+async def back_to_data_display_call(callback_query: CallbackQuery, state: FSMContext):
+    await callback_query.message.delete()
+
+    state_data = await state.get_data()
+
+    await callback_query.message.answer_photo(photo=state_data.get("photo"),
+                                              reply_markup=await personal_data_display_kb())
+
+
+@router.callback_query(F.data == "back_to_personal_qualities", MatrixOfDestiny.DataDisplay)
+async def back_to_personal_qualities_call(callback_query: CallbackQuery, state: FSMContext):
+    await callback_query.message.delete()
+
+    state_data = await state.get_data()
+    response = await get_personal_matrix_data(state_data.get("body"))
+    result_data = response["data"][0]["result"]
+
+    text = "<b>{title}</b>\n\n{text}".format(title=response["data"][0].get("title"),
+                                             text=text_to_norm(result_data["intro"].get("text")))
+
+    await callback_query.message.answer(text=(text + "\n\n⬇️ Обери знизу :)"),
+                                        reply_markup=await dd_personal_qualities_kb())
+
+
+@router.callback_query(F.data.startswith("cdd:"), MatrixOfDestiny.DataDisplay)
+async def matrix_compatibility_page_call(callback_query: CallbackQuery, state: FSMContext):
+    try:
+        page = callback_query.data.split(":")[1]
+
+        state_data = await state.get_data()
+        position = state_data.get("position")
+        if page == position:
+            return
+
+        await callback_query.message.delete()
+        msg = await loading_message(callback_query.message)
+
+        await state.update_data(position=page)
+
+        response = await get_compatibility_matrix_data(state_data.get("body"))
+
+        if page == "photo":
+            await callback_query.message.answer_photo(photo=state_data.get("photo"),
+                                                      reply_markup=await compatibility_data_display_kb())
+        elif page == "positive":
+            text_data = response["data"][0]["result"]["for"]
+            title = text_to_norm(text_data.get("title"))
+            text = text_to_norm(text_data.get("text"))
+
+            await callback_query.message.answer(text=f"<b>{title}</b>\n\n{text}",
+                                                reply_markup=await compatibility_data_display_kb())
+        elif page == "cc_zone":
+            text_data = response["data"][2]
+
+            title = text_to_norm(text_data.get("title"))
+            text = text_to_norm(text_data["result"]["intro"].get("text"))
+
+            await callback_query.message.answer(text=f"<b>{title}</b>\n\n{text}",
+                                                reply_markup=await compatibility_data_display_kb())
+
+        await msg.delete()
+        await callback_query.answer()
+    except Exception:
+        await callback_query.message.answer(
+            "😥 Вибач, сталася помилка. Спробуй ще раз.")

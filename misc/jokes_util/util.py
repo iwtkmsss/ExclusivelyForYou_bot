@@ -132,7 +132,7 @@ async def get_scraping_zodiac_sign(zodiac_sign) -> dict:
     return {}
 
 
-async def get_matrix_data(body):
+async def get_personal_matrix_data(body):
     """
         body -: {"date1": "dd.mm.yyyy", "name1": "name", "gender": "m" || "f"}
 
@@ -208,6 +208,7 @@ def _fix_opacity_percents(svg_text: str) -> str:
                       repl_style, svg_text)
     return svg_text
 
+
 def _fix_rem_to_px(svg_text: str, root_font_px: float = 16.0) -> str:
     # Переводимо будь-яке "<num>rem" → "<num*root>px"
     return re.sub(
@@ -215,6 +216,7 @@ def _fix_rem_to_px(svg_text: str, root_font_px: float = 16.0) -> str:
         lambda m: f'{float(m.group(1))*root_font_px:.6f}px',
         svg_text
     )
+
 
 async def svg_b64_to_png_bytes(b64: str) -> bytes:
     # знімаємо префікс data:
@@ -227,3 +229,18 @@ async def svg_b64_to_png_bytes(b64: str) -> bytes:
 
     # рендер
     return cairosvg.svg2png(bytestring=svg_text.encode('utf-8'))
+
+
+async def get_compatibility_matrix_data(body):
+    """
+        body -: {"date1": "dd.mm.yyyy", "name1": "name", "date2": "dd.mm.yyyy", "name2": "name"}
+
+        :param body:
+        :return:
+        """
+
+    url = "https://matrix-doli.com/api/matrix/compat"
+    s = requests.Session()
+    body["purchase"] = False
+    response = s.get(url=url, json=body).json()
+    return response

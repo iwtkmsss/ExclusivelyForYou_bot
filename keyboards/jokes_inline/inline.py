@@ -216,9 +216,46 @@ async def matrix_destiny_personal_kb():
     return kb.as_markup()
 
 
-async def matrix_paginatios_kb(page: int, max_page: int):
-    paginations_kb = await paginatios_kb(page, max_page)
+async def personal_data_display_kb():
+    kb = InlineKeyboardBuilder()
 
-    paginations_kb.row(InlineKeyboardButton(text="◀️ Назад", callback_data="back_to_m_d_personal"))
+    kb.row(InlineKeyboardButton(text="📸 Фото", callback_data="pdd:photo"))
+    kb.row(InlineKeyboardButton(text="📊 Таблиця", callback_data="pdd:table"))
+    kb.row(InlineKeyboardButton(text="🌟 Особисті якості", callback_data="pdd:personal_qualities"))
+    kb.row(InlineKeyboardButton(text="🩺 Здоров'я", callback_data="pdd:health"))
+    kb.row(InlineKeyboardButton(text="🕰 Минуле життя", callback_data="pdd:past_life"))
+    kb.row(InlineKeyboardButton(text="🎯 Призначення", callback_data="pdd:appointment"))
+    kb.row(InlineKeyboardButton(text="📅 Прогноз по роках", callback_data="pdd:forecast_year"))
+    kb.row(InlineKeyboardButton(text="◀️ Назад", callback_data="back_to_m_d_personal"))
 
-    return paginations_kb.as_markup()
+    return kb.as_markup()
+
+
+async def dd_personal_qualities_kb():
+    kb = InlineKeyboardBuilder()
+
+    kb.row(InlineKeyboardButton(text="✅ У позитиві", callback_data="pdd:positive"))
+    kb.row(InlineKeyboardButton(text="❌ У негативі", callback_data="pdd:negative"))
+    kb.row(InlineKeyboardButton(text="💬 У спілкуванні", callback_data="pdd:communication"))
+    kb.row(InlineKeyboardButton(text="◀️ Назад", callback_data="back_to_data_display"))
+
+    return kb.as_markup()
+
+
+back_to_personal_qualities_kb = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [
+            InlineKeyboardButton(text="◀️ Назад", callback_data="back_to_personal_qualities")
+        ]
+    ]
+)
+
+async def compatibility_data_display_kb():
+    kb = InlineKeyboardBuilder()
+
+    kb.row(InlineKeyboardButton(text="📸 Фото", callback_data="cdd:photo"))
+    kb.row(InlineKeyboardButton(text="✅ У позитиві ", callback_data="cdd:positive"))
+    kb.row(InlineKeyboardButton(text="💑 Зона комфорту пари", callback_data="cdd:cc_zone"))
+    kb.row(InlineKeyboardButton(text="◀️ Назад", callback_data="back_to_matrix_destiny"))
+
+    return kb.as_markup()
