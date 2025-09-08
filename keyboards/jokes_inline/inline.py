@@ -124,7 +124,6 @@ async def reminder_kb(tg_id):
 
     kb.row(InlineKeyboardButton(text="🔔 Щоденне нагадування", callback_data="daily_reminder"))
     kb.row(InlineKeyboardButton(text="📅 Разове нагадування", callback_data="one_reminder"))
-    kb.row(InlineKeyboardButton(text="📈 Планування дня", callback_data="planning_day"))
     kb.row(back_to_jokes_bt)
 
     kb.adjust(1)
@@ -259,3 +258,15 @@ async def compatibility_data_display_kb():
     kb.row(InlineKeyboardButton(text="◀️ Назад", callback_data="back_to_matrix_destiny"))
 
     return kb.as_markup()
+
+
+# ----- reminder_call ----- reminder_call ----- reminder_call ----- reminder_call ----- reminder_call -----
+
+back_to_reminder_kb = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [
+            InlineKeyboardButton(text="◀️ Назад", callback_data="back_to_reminder")
+        ]
+    ]
+)
+

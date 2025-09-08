@@ -4,7 +4,6 @@ from aiogram import Router, F
 from aiogram.types import CallbackQuery, FSInputFile
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
-from numpy.distutils.fcompiler.lahey import LaheyFCompiler
 
 from keyboards import (jokes_kb, good_mood_kb, tarological_kb, recipes_kb, reminder_kb, \
                        support_kb, games_kb, premium_recipes_kb, back_to_premium_recipes_kb, food_recipe_kb,
@@ -592,3 +591,25 @@ async def matrix_compatibility_page_call(callback_query: CallbackQuery, state: F
     except Exception:
         await callback_query.message.answer(
             "😥 Вибач, сталася помилка. Спробуй ще раз.")
+
+
+# ----- reminder_call ----- reminder_call ----- reminder_call ----- reminder_call ----- reminder_call -----
+
+
+@router.callback_query(F.data == "daily_reminder")
+async def daily_reminder_call(callback_query: CallbackQuery):
+    user_id = callback_query.from_user.id
+    text = "TEXT"
+
+    await callback_query.message.edit_text(text=text,
+                                reply_markup=await  kb(user_id))
+
+
+@router.callback_query(F.data == "one_reminder")
+async def one_reminder_call(callback_query: CallbackQuery):
+    user_id = callback_query.from_user.id
+    text = "TEXT"
+
+    await callback_query.message.edit_text(text=text,
+                                reply_markup=await  kb(user_id))
+
