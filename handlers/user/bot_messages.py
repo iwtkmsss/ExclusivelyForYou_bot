@@ -7,7 +7,7 @@ from aiogram.types import Message, BufferedInputFile
 from aiogram.fsm.context import FSMContext
 
 from keyboards import personal_data_display_kb, compatibility_data_display_kb
-from misc import MatrixOfDestiny, loading_message
+from misc import MatrixOfDestiny, loading_message, T, Reminders, parse_reminder, DEFAULT_TZ
 from misc.jokes_util.util import get_personal_matrix_data, svg_b64_to_png_bytes, get_compatibility_matrix_data
 
 router = Router()
@@ -54,7 +54,7 @@ async def personal_message(message: Message, state: FSMContext, bot: Bot):
         await msg.delete()
     except Exception as e:
         print("Error in FoodRecipes_page_call:", e)
-        await message.answer("Вибач, сталася помилка. Спробуй ще раз.")
+        await message.answer(T.ErrorMessage)
 
 
 @router.message(F.text, MatrixOfDestiny.Compatibility)
@@ -99,33 +99,54 @@ async def compatibility_message(message: Message, state: FSMContext, bot: Bot):
 
         pairs.append((name.strip(), date_str))
 
-    # try:
+    try:
+        state_data = await state.get_data()
+        await bot.delete_message(chat_id=message.from_user.id, message_id=state_data["message_id"])
+        msg = await loading_message(message)
+
+        body = {
+            "date1": pairs[0][1],
+            "name1": pairs[0][0],
+            "date2": pairs[1][1],
+            "name2": pairs[1][0]
+        }
+
+        data = await get_compatibility_matrix_data(body)
+        print(body, data)
+        svg_bytes = await svg_b64_to_png_bytes(data.get("svg"))
+        photo = BufferedInputFile(svg_bytes, filename="image.png")
+
+        await state.set_state(MatrixOfDestiny.DataDisplay)
+
+        await state.update_data(photo=photo)
+        await state.update_data(body=body)
+        await state.update_data(position="photo")
+
+        await message.answer_photo(photo=photo, reply_markup=await compatibility_data_display_kb())
+        await msg.delete()
+    except Exception as e:
+        await message.answer(T.ErrorMessage)
+
+
+@router.message(F.text, Reminders.Setting)
+async def reminders_message(message: Message, state: FSMContext):
+    try:
+        parsed = parse_reminder(message.text)
+    except ValueError as e:
+        await message.reply(
+            "❌ " + str(e) + "\n\nПриклади:\n"
+            "• Текст…\\n14:25  (щодня о 14:25)\n"
+            "• Текст…\\n09.09 14:25  (9 вересня о 14:25)\n"
+            "• Текст…\\n09.09.2025 14:25"
+        )
+        return  
+
     state_data = await state.get_data()
-    await bot.delete_message(chat_id=message.from_user.id, message_id=state_data["message_id"])
-    msg = await loading_message(message)
+    type_ =  state_data.get("type")
 
-    body = {
-        "date1": pairs[0][1],
-        "name1": pairs[0][0],
-        "date2": pairs[1][1],
-        "name2": pairs[1][0]
-    }
+    
 
-    data = await get_compatibility_matrix_data(body)
-    print(body, data)
-    svg_bytes = await svg_b64_to_png_bytes(data.get("svg"))
-    photo = BufferedInputFile(svg_bytes, filename="image.png")
 
-    await state.set_state(MatrixOfDestiny.DataDisplay)
-
-    await state.update_data(photo=photo)
-    await state.update_data(body=body)
-    await state.update_data(position="photo")
-
-    await message.answer_photo(photo=photo, reply_markup=await compatibility_data_display_kb())
-    await msg.delete()
-    # except Exception as e:
-    #     await message.answer("Вибач, сталася помилка. Спробуй ще раз.")
 
 
 # @router.message(F.photo)

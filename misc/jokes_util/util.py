@@ -5,9 +5,14 @@ import os
 import json
 import random
 
+from zoneinfo import ZoneInfo
+from datetime import datetime
+
 import cairosvg
 import requests
 from bs4 import BeautifulSoup
+
+from misc import DEFAULT_TZ, BASE_DIR
 
 base_dir = Path(Path(__file__).parent)
 
@@ -244,3 +249,60 @@ async def get_compatibility_matrix_data(body):
     body["purchase"] = False
     response = s.get(url=url, json=body).json()
     return response
+
+
+# AS A REMINDER -->
+
+DT_RE = re.compile(r'^\s*(\d{1,2})\.(\d{1,2})\s+(\d{1,2})[:.](\d{2})\s*$')
+
+def parse_reminder(msg: str, *, year: int | None = None) -> dict:
+    """
+    Очікує повідомлення:
+        <довільний текст>
+        DD.MM HH:MM  (або DD.MM HH.MM)
+
+    Повертає: {"text": str, "date": datetime}
+    """
+    lines = [ln.rstrip() for ln in msg.splitlines() if ln.strip() != ""]
+    if not lines:
+        raise ValueError("Порожнє повідомлення")
+
+    match = None
+    idx = None
+    # шукаємо знизу вгору останній рядок із датою
+    for i in range(len(lines) - 1, -1, -1):
+        m = DT_RE.match(lines[i])
+        if m:
+            match = m
+            idx = i
+            break
+
+    if not match:
+        raise ValueError("Не знайдено рядок формату 'DD.MM HH:MM' або 'DD.MM HH.MM'.")
+
+    day, month, hour, minute = map(int, match.groups())
+    if year is None:
+        year = datetime.now().year
+
+    # кине ValueError, якщо дата некоректна (напр. 31.02)
+    dt = datetime(year, month, day, hour, minute)
+
+    text = "\n".join(lines[:idx]).strip()
+    return {"text": text, "date": dt}
+
+
+def create_reminder(tg_id: int, data):
+    path = Path(BASE_DIR, "misc", "reminders.json")
+
+    if not path.exists():
+        path.write_text("{}", encoding="utf-8") 
+
+    with open(path, "r", encoding="utf-8") as f:
+        json_data = json.load(f)
+
+    json_data[tg_id].append(data)
+
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(json_data, f, ensure_ascii=False, indent=4)
+
+    

@@ -10,3 +10,6 @@ class MatrixOfDestiny(StatesGroup):
     Personal = State()
     Compatibility = State()
     DataDisplay = State()
+
+class Reminders(StatesGroup):
+    Setting = State()

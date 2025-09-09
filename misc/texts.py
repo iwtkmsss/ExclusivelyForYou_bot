@@ -1,4 +1,6 @@
 class T:
+    ErrorMessage = "😥 Вибач, сталася помилка. Спробуй ще раз."
+    
     FOOD_RECIPE = """
 Назва страви: <b>{name}</b>\n
 {ingredients}\n
@@ -49,4 +51,46 @@ class T:
 Олег 01.04.2006
 ----------------\n
 <i>Тоб-то просто через пробіл ім'я та дата народження, потім через перенос абзацу ім'я та дата народження, без ком і тд.</i> 
+"""
+    СreatinпReminder = """
+Текст Текст Текст Текст
+Текст Текст Текст Текст
+09.09 14:25
+(dd.mm hh.mm)
+"""
+    Horoscope = """
+horoscope
+"""
+    Tarological = """
+tarological
+"""
+    PremiumRecipes = """
+premium_recipes
+"""
+    Recipes = """
+recipes
+"""
+    Games = """
+games
+"""
+    Support = """
+support
+"""
+    Reminder = """
+reminder
+"""
+    Tarological = """
+tarological
+"""
+    GoodMood = """
+good_mood
+"""
+    Jokes = """
+jokes
+"""
+    MatrixDestiny = """
+matrix_destiny
+"""
+    MyReminder = """
+my_reminder
 """

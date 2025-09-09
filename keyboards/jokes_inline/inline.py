@@ -124,6 +124,7 @@ async def reminder_kb(tg_id):
 
     kb.row(InlineKeyboardButton(text="🔔 Щоденне нагадування", callback_data="daily_reminder"))
     kb.row(InlineKeyboardButton(text="📅 Разове нагадування", callback_data="one_reminder"))
+    kb.row(InlineKeyboardButton(text="📋 Мої нагадування", callback_data="my_reminder"))
     kb.row(back_to_jokes_bt)
 
     kb.adjust(1)

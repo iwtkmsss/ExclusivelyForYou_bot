@@ -11,14 +11,14 @@ from keyboards import (jokes_kb, good_mood_kb, tarological_kb, recipes_kb, remin
                        matrix_destiny_personal_kb, personal_data_display_kb, dd_personal_qualities_kb,
                        back_to_personal_qualities_kb, compatibility_data_display_kb)
 from misc import get_random_premium_recipe, get_random_json_food, T, DEFAULT_PHOTO_FOR_RECIPE, Paginations, \
-    loading_message, get_scraping_zodiac_sign, t_zodiac_signs, MatrixOfDestiny
+    loading_message, get_scraping_zodiac_sign, t_zodiac_signs, MatrixOfDestiny, Reminders
 from misc.jokes_util.util import chakra_matrix_html, get_personal_matrix_data, get_compatibility_matrix_data
 
 router = Router()
 
 @router.callback_query(F.data == "jokes")
 async def jokes_call(callback_query: CallbackQuery):
-    text = "JOKES TEXT"
+    text = T.Jokes
 
     await callback_query.message.edit_text(text=text,
                                 reply_markup=jokes_kb)
@@ -27,7 +27,7 @@ async def jokes_call(callback_query: CallbackQuery):
 @router.callback_query(F.data == "good_mood")
 async def good_mood_call(callback_query: CallbackQuery):
     user_id = callback_query.from_user.id
-    text = "good_mood TEXT"
+    text = T.GoodMood
 
     await callback_query.message.edit_text(text=text,
                                            reply_markup=await good_mood_kb(user_id))
@@ -36,7 +36,7 @@ async def good_mood_call(callback_query: CallbackQuery):
 @router.callback_query(F.data == "tarological")
 async def tarological_call(callback_query: CallbackQuery):
     user_id = callback_query.from_user.id
-    text = "tarological TEXT"
+    text = T.tarological
 
     await callback_query.message.edit_text(text=text,
                                            reply_markup=await tarological_kb(user_id))
@@ -45,7 +45,7 @@ async def tarological_call(callback_query: CallbackQuery):
 @router.callback_query(F.data == "recipes")
 async def recipes_call(callback_query: CallbackQuery):
     user_id = callback_query.from_user.id
-    text = "recipes TEXT"
+    text = T.Recipes
 
     await callback_query.message.edit_text(text=text,
                                            reply_markup=await recipes_kb(user_id))
@@ -54,7 +54,7 @@ async def recipes_call(callback_query: CallbackQuery):
 @router.callback_query(F.data == "reminder")
 async def reminder_call(callback_query: CallbackQuery):
     user_id = callback_query.from_user.id
-    text = "reminder TEXT"
+    text = T.Reminder
 
     await callback_query.message.edit_text(text=text,
                                            reply_markup=await reminder_kb(user_id))
@@ -63,7 +63,7 @@ async def reminder_call(callback_query: CallbackQuery):
 @router.callback_query(F.data == "support")
 async def support_call(callback_query: CallbackQuery):
     user_id = callback_query.from_user.id
-    text = "support TEXT"
+    text = T.Support
 
     await callback_query.message.edit_text(text=text,
                                            reply_markup=await support_kb(user_id))
@@ -72,7 +72,7 @@ async def support_call(callback_query: CallbackQuery):
 @router.callback_query(F.data == "games")
 async def games_call(callback_query: CallbackQuery):
     user_id = callback_query.from_user.id
-    text = "games TEXT"
+    text = T.Games
 
     await callback_query.message.edit_text(text=text,
                                            reply_markup=await games_kb(user_id))
@@ -100,7 +100,7 @@ async def food_recipe_call(callback_query: CallbackQuery, state: FSMContext):
         await msg.delete()
     except Exception as e:
         print("Error in food_recipe_call:", e)
-        await callback_query.message.answer("Вибач, сталася помилка при завантаженні рецепту. Спробуй ще раз.")
+        await callback_query.message.answer(T.ErrorMessage)
 
 
 @router.callback_query(F.data.startswith("page:"), Paginations.FoodRecipes)
@@ -144,13 +144,13 @@ async def food_recipes_page_call(callback_query: CallbackQuery, state: FSMContex
         await callback_query.answer()
     except Exception as e:
         print("Error in FoodRecipes_page_call:", e)
-        await callback_query.message.answer("Вибач, сталася помилка при завантаженні сторінки. Спробуй ще раз.")
+        await callback_query.message.answer(T.ErrorMessage)
 
 
 @router.callback_query(F.data == "back_to_recipes")
 async def back_to_recipes_call(callback_query: CallbackQuery):
     user_id = callback_query.from_user.id
-    text = "recipes TEXT"
+    text = T.Recipes
 
     await callback_query.message.delete()
     await callback_query.message.answer(text=text,
@@ -160,7 +160,7 @@ async def back_to_recipes_call(callback_query: CallbackQuery):
 @router.callback_query(F.data == "premium_recipes") # віддати преміум рецепт
 async def premium_recipes_call(callback_query: CallbackQuery):
     user_id = callback_query.from_user.id
-    text = "premium_recipes TEXT"
+    text = T.PremiumRecipes
 
     await callback_query.message.edit_text(text=text,
                                            reply_markup=await premium_recipes_kb(user_id))
@@ -169,7 +169,7 @@ async def premium_recipes_call(callback_query: CallbackQuery):
 @router.callback_query(F.data == "back_to_recipes")
 async def back_to_recipes_call(callback_query: CallbackQuery):
     user_id = callback_query.from_user.id
-    text = "recipes TEXT"
+    text = T.Recipes
 
     await callback_query.message.edit_text(text=text,
                                            reply_markup=await recipes_kb(user_id))
@@ -195,7 +195,7 @@ async def recipe_call(callback_query: CallbackQuery):
 @router.callback_query(F.data == "back_to_premium_recipes")
 async def back_to_premium_recipes_call(callback_query: CallbackQuery):
     user_id = callback_query.from_user.id
-    text = "premium_recipes TEXT"
+    text = T.PremiumRecipes
 
     await callback_query.message.delete()
 
@@ -224,7 +224,7 @@ async def cocktail_recipes_call(callback_query: CallbackQuery, state: FSMContext
         await msg.delete()
     except Exception as e:
         print("Error in food_recipe_call:", e)
-        await callback_query.message.answer("Вибач, сталася помилка при завантаженні рецепту. Спробуй ще раз.")
+        await callback_query.message.answer(T.ErrorMessage)
 
 
 @router.callback_query(F.data.startswith("page:"), Paginations.CocktailRecipes)
@@ -269,7 +269,7 @@ async def cocktail_recipes_page_call(callback_query: CallbackQuery, state: FSMCo
         await callback_query.answer()
     except Exception as e:
         print("Error in FoodRecipes_page_call:", e)
-        await callback_query.message.answer("Вибач, сталася помилка при завантаженні сторінки. Спробуй ще раз.")
+        await callback_query.message.answer(T.ErrorMessage)
 
 
 @router.callback_query(F.data == "sweets_recipe")
@@ -293,7 +293,7 @@ async def sweets_recipes_call(callback_query: CallbackQuery, state: FSMContext):
         await msg.delete()
     except Exception as e:
         print("Error in food_recipe_call:", e)
-        await callback_query.message.answer("Вибач, сталася помилка при завантаженні рецепту. Спробуй ще раз.")
+        await callback_query.message.answer(T.ErrorMessage)
 
 
 @router.callback_query(F.data.startswith("page:"), Paginations.SweetsRecipe)
@@ -338,7 +338,7 @@ async def sweets_recipe_page_call(callback_query: CallbackQuery, state: FSMConte
         await callback_query.answer()
     except Exception as e:
         print("Error in FoodRecipes_page_call:", e)
-        await callback_query.message.answer("Вибач, сталася помилка при завантаженні сторінки. Спробуй ще раз.")
+        await callback_query.message.answer(T.ErrorMessage)
 
 
 # ----- tarological_call ----- tarological_call ----- tarological_call ----- tarological_call ----- tarological_call -----
@@ -347,7 +347,7 @@ async def sweets_recipe_page_call(callback_query: CallbackQuery, state: FSMConte
 @router.callback_query(F.data == "horoscope")
 async def horoscope_call(callback_query: CallbackQuery):
     user_id = callback_query.from_user.id
-    text = "horoscope TEXT"
+    text = T.Horoscope
 
     await callback_query.message.edit_text(text, reply_markup=await all_horoscope_kb())
 
@@ -355,7 +355,7 @@ async def horoscope_call(callback_query: CallbackQuery):
 @router.callback_query(F.data == "back_to_tarological")
 async def back_to_tarological_call(callback_query: CallbackQuery):
     user_id = callback_query.from_user.id
-    text = "tarological TEXT"
+    text = T.Tarological
 
     await callback_query.message.edit_text(text=text,
                                            reply_markup=await tarological_kb(user_id))
@@ -381,7 +381,7 @@ async def back_to_all_horoscope_call(callback_query: CallbackQuery):
 async def matrix_destiny_call(callback_query: CallbackQuery, state: FSMContext):
     await state.clear()
 
-    text = "TEXT matrix_destiny"
+    text = T.MatrixDestiny
 
     await callback_query.message.edit_text(text=text,
                                             reply_markup=await matrix_destiny_kb())
@@ -521,8 +521,7 @@ async def matrix_personal_page_call(callback_query: CallbackQuery, state: FSMCon
         await callback_query.answer()
     except Exception as e:
         print("Error in FoodRecipes_page_call:", e)
-        await callback_query.message.answer(
-            "😥 Вибач, сталася помилка. Спробуй ще раз.")
+        await callback_query.message.answer(T.ErrorMessage)
 
 
 @router.callback_query(F.data == "back_to_data_display", MatrixOfDestiny.DataDisplay)
@@ -589,27 +588,37 @@ async def matrix_compatibility_page_call(callback_query: CallbackQuery, state: F
         await msg.delete()
         await callback_query.answer()
     except Exception:
-        await callback_query.message.answer(
-            "😥 Вибач, сталася помилка. Спробуй ще раз.")
+        await callback_query.message.answer(T.ErrorMessage)
 
 
 # ----- reminder_call ----- reminder_call ----- reminder_call ----- reminder_call ----- reminder_call -----
 
 
 @router.callback_query(F.data == "daily_reminder")
-async def daily_reminder_call(callback_query: CallbackQuery):
-    user_id = callback_query.from_user.id
-    text = "TEXT"
+async def daily_reminder_call(callback_query: CallbackQuery, state: FSMContext):
+    text = T.DailyReminder
+
+    await state.set_state(Reminders.Setting)
+    await state.update_data(type="daily")
 
     await callback_query.message.edit_text(text=text,
-                                reply_markup=await  kb(user_id))
+                                reply_markup=await  kb())
 
 
 @router.callback_query(F.data == "one_reminder")
-async def one_reminder_call(callback_query: CallbackQuery):
-    user_id = callback_query.from_user.id
-    text = "TEXT"
+async def one_reminder_call(callback_query: CallbackQuery, state: FSMContext):
+    text = T.OneReminder
+
+    await state.set_state(Reminders.Setting)
+    await state.update_data(type="one")
 
     await callback_query.message.edit_text(text=text,
-                                reply_markup=await  kb(user_id))
+                                reply_markup=await  kb())
 
+
+@router.callback_query(F.data == "my_reminder")
+async def my_reminder_call(callback_query: CallbackQuery):
+    text = T.MyReminder
+
+    await callback_query.message.edit_text(text=text,
+                                reply_markup=await  kb())
