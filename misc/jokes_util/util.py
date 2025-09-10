@@ -253,7 +253,7 @@ async def get_compatibility_matrix_data(body):
 
 # AS A REMINDER -->
 
-DT_RE = re.compile(r'^\s*(\d{1,2})\.(\d{1,2})\s+(\d{1,2})[:.](\d{2})\s*$')
+DT_RE = re.compile(r"^\s*(\d{1,2})\.(\d{1,2})\s+(\d{1,2})[:.](\d{2})\s*$")
 
 def parse_reminder(msg: str, *, year: int | None = None) -> dict:
     """
@@ -263,46 +263,49 @@ def parse_reminder(msg: str, *, year: int | None = None) -> dict:
 
     Повертає: {"text": str, "date": datetime}
     """
-    lines = [ln.rstrip() for ln in msg.splitlines() if ln.strip() != ""]
+    lines = [ln.strip() for ln in msg.splitlines() if ln.strip()]
     if not lines:
         raise ValueError("Порожнє повідомлення")
 
-    match = None
-    idx = None
-    # шукаємо знизу вгору останній рядок із датою
-    for i in range(len(lines) - 1, -1, -1):
-        m = DT_RE.match(lines[i])
-        if m:
-            match = m
-            idx = i
-            break
+    # беремо тільки останній непорожній рядок
+    last = lines[-1]
+    m = DT_RE.match(last)
+    if not m:
+        raise ValueError("Останній рядок має бути у форматі 'DD.MM HH:MM'.")
 
-    if not match:
-        raise ValueError("Не знайдено рядок формату 'DD.MM HH:MM' або 'DD.MM HH.MM'.")
-
-    day, month, hour, minute = map(int, match.groups())
+    day, month, hour, minute = map(int, m.groups())
     if year is None:
         year = datetime.now().year
 
-    # кине ValueError, якщо дата некоректна (напр. 31.02)
     dt = datetime(year, month, day, hour, minute)
+    text = "\n".join(lines[:-1]).strip()
 
-    text = "\n".join(lines[:idx]).strip()
     return {"text": text, "date": dt}
 
 
-def create_reminder(tg_id: int, data):
+async def create_reminder(tg_id, data):
     path = Path(BASE_DIR, "misc", "reminders.json")
 
     if not path.exists():
-        path.write_text("{}", encoding="utf-8") 
+        path.write_text("{}", encoding="utf-8")
 
-    with open(path, "r", encoding="utf-8") as f:
-        json_data = json.load(f)
+    payload = dict(data)
+    if isinstance(payload.get("date"), datetime):
+        payload["date"] = payload["date"].isoformat()
 
-    json_data[tg_id].append(data)
+    # читаем JSON (если битый — начинаем заново)
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            json_data = json.load(f)
+        if not isinstance(json_data, dict):
+            json_data = {}
+    except (json.JSONDecodeError, FileNotFoundError):
+        json_data = {}
 
+    # ключи в JSON должны быть строками
+    key = str(tg_id)
+    json_data.setdefault(key, []).append(payload)
+
+    # записываем обратно
     with open(path, "w", encoding="utf-8") as f:
         json.dump(json_data, f, ensure_ascii=False, indent=4)
-
-    

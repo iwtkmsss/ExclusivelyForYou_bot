@@ -1,5 +1,5 @@
 import re
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import List, Tuple
 
 from aiogram import Router, F, Bot
@@ -128,6 +128,19 @@ async def compatibility_message(message: Message, state: FSMContext, bot: Bot):
         await message.answer(T.ErrorMessage)
 
 
+def _next_daily_run(now: datetime, hh: int, mm: int) -> datetime:
+    # Возвращает ближайший запуск сегодня/завтра с указанным временем (tz берём из now)
+    target = now.replace(hour=hh, minute=mm, second=0, microsecond=0)
+    if target <= now:
+        target += timedelta(days=1)
+    return target
+
+def _fmt_when(dt: datetime, mode: str) -> str:
+    if mode == "daily":
+        return f"щодня о {dt:%H:%M} (перше спрацювання {dt:%d.%m.%Y})"
+    return f"{dt:%d.%m.%Y о %H:%M}"
+
+
 @router.message(F.text, Reminders.Setting)
 async def reminders_message(message: Message, state: FSMContext):
     try:
@@ -142,11 +155,34 @@ async def reminders_message(message: Message, state: FSMContext):
         return  
 
     state_data = await state.get_data()
-    type_ =  state_data.get("type")
+    mode =  state_data.get("type")
 
-    
+    now = message.date if message.date.tzinfo else datetime.now(timezone.utc)
+    dt = parsed["date"]
+    if dt.tzinfo is None:
+        # приклеим ту же зону, что у now (чаще всего UTC)
+        dt = dt.replace(tzinfo=now.tzinfo)
+    if mode == "daily":
+        # ежедневное: берём только время и считаем ближайшее срабатывание
+        dt = _next_daily_run(now, dt.hour, dt.minute)
+    else:
+        # разовое: гарантируем будущее; если уже прошло — подсказка
+        if dt <= now:
+            await message.reply("❌ Дата/час уже минули. Укажіть майбутній момент.")
+            return
 
-
+    item = {
+        "text": parsed["text"],
+        "run_at": dt.isoformat(),        # хранить удобно в ISO
+        "mode": mode,                    # "daily" | "one"
+        "created_at": now.isoformat(),
+    }
+    await message.answer(
+        "✅ Нагадування збережено.\n\n"
+        f"<b>{parsed['text']}</b>\n{_fmt_when(dt, mode)}",
+        parse_mode="HTML"
+    )
+    await state.clear()
 
 
 # @router.message(F.photo)
