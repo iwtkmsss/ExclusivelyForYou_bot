@@ -9,7 +9,7 @@ from keyboards import (jokes_kb, good_mood_kb, tarological_kb, recipes_kb, remin
                        support_kb, games_kb, premium_recipes_kb, back_to_premium_recipes_kb, food_recipe_kb,
                        all_horoscope_kb, back_to_all_horoscope_kb, matrix_destiny_kb, back_to_m_d_personal_kb,
                        matrix_destiny_personal_kb, personal_data_display_kb, dd_personal_qualities_kb,
-                       back_to_personal_qualities_kb, compatibility_data_display_kb)
+                       back_to_personal_qualities_kb, compatibility_data_display_kb, back_to_reminder_kb)
 from misc import get_random_premium_recipe, get_random_json_food, T, DEFAULT_PHOTO_FOR_RECIPE, Paginations, \
     loading_message, get_scraping_zodiac_sign, t_zodiac_signs, MatrixOfDestiny, Reminders
 from misc.jokes_util.util import chakra_matrix_html, get_personal_matrix_data, get_compatibility_matrix_data
@@ -599,10 +599,10 @@ async def daily_reminder_call(callback_query: CallbackQuery, state: FSMContext):
     text = T.DailyReminder
 
     await state.set_state(Reminders.Setting)
-    await state.update_data(type="daily")
+    await state.update_data(mode="daily")
 
     await callback_query.message.edit_text(text=text,
-                                reply_markup=await  kb())
+                                reply_markup=back_to_reminder_kb)
 
 
 @router.callback_query(F.data == "one_reminder")
@@ -610,10 +610,10 @@ async def one_reminder_call(callback_query: CallbackQuery, state: FSMContext):
     text = T.OneReminder
 
     await state.set_state(Reminders.Setting)
-    await state.update_data(type="one")
+    await state.update_data(mode="one")
 
     await callback_query.message.edit_text(text=text,
-                                reply_markup=await  kb())
+                                reply_markup=back_to_reminder_kb)
 
 
 @router.callback_query(F.data == "my_reminder")
@@ -621,4 +621,12 @@ async def my_reminder_call(callback_query: CallbackQuery):
     text = T.MyReminder
 
     await callback_query.message.edit_text(text=text,
-                                reply_markup=await  kb())
+                                reply_markup=back_to_reminder_kb)
+
+
+@router.callback_query(F.data == "back_to_reminder")
+async def back_to_reminder_calll(callback_query: CallbackQuery, state: FSMContext):
+    await state.clear()
+
+    await reminder_call(callback_query)
+    

@@ -5,9 +5,9 @@ import os
 import json
 import random
 
-from zoneinfo import ZoneInfo
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
+import calendar
 import cairosvg
 import requests
 from bs4 import BeautifulSoup
@@ -253,45 +253,87 @@ async def get_compatibility_matrix_data(body):
 
 # AS A REMINDER -->
 
-DT_RE = re.compile(r"^\s*(\d{1,2})\.(\d{1,2})\s+(\d{1,2})[:.](\d{2})\s*$")
+# one: "DD.MM HH:MM" или "DD.MM.YYYY HH:MM" (разделитель времени : или .)
+RE_ONE = re.compile(r'^\s*(\d{1,2})\.(\d{1,2})(?:\.(\d{4}))?\s+(\d{1,2})[:.](\d{2})\s*$')
+# daily: "HH:MM" (разделитель : или .)
+RE_DAILY = re.compile(r'^\s*(\d{1,2})[:.](\d{2})\s*$')
 
-def parse_reminder(msg: str, *, year: int | None = None) -> dict:
+def parse_reminder_message(message_text: str, mode: str, *, default_year: int | None = None) -> dict:
     """
-    Очікує повідомлення:
-        <довільний текст>
-        DD.MM HH:MM  (або DD.MM HH.MM)
+    mode: 'one'  -> ждём последнюю строку вида DD.MM[.YYYY] HH:MM
+          'daily'-> ждём последнюю строку вида HH:MM
 
-    Повертає: {"text": str, "date": datetime}
+    Возвращает:
+      {
+        "text": <всё сообщение без последней строки>,
+        "iso": <ISO-8601 с таймзоной Europe/Kyiv>,
+        "dt":  <tz-aware datetime>
+      }
     """
-    lines = [ln.strip() for ln in msg.splitlines() if ln.strip()]
+    lines = [ln.rstrip() for ln in (message_text or "").splitlines() if ln.strip()]
     if not lines:
-        raise ValueError("Порожнє повідомлення")
+        raise ValueError("Порожнє повідомлення.")
 
-    # беремо тільки останній непорожній рядок
     last = lines[-1]
-    m = DT_RE.match(last)
-    if not m:
-        raise ValueError("Останній рядок має бути у форматі 'DD.MM HH:MM'.")
+    body_text = "\n".join(lines[:-1]).strip()
+    now = datetime.now(DEFAULT_TZ)
+    
+    if mode == "one":
+        m = RE_ONE.match(last)
+        if not m:
+            raise ValueError("Останній рядок має бути 'DD.MM HH:MM' або 'DD.MM.YYYY HH:MM'.")
+        day, month, year, hour, minute = m.groups()
+        day, month, hour, minute = int(day), int(month), int(hour), int(minute)
 
-    day, month, hour, minute = map(int, m.groups())
-    if year is None:
-        year = datetime.now().year
+        explicit_year = year is not None
+        year = int(year) if year else (default_year or now.year)
 
-    dt = datetime(year, month, day, hour, minute)
-    text = "\n".join(lines[:-1]).strip()
+        # пробуем собрать дату (валидность числа/місяця)
+        try:
+            dt = datetime(year, month, day, hour, minute, tzinfo=DEFAULT_TZ)
+        except ValueError as e:
+            raise ValueError(f"Некоректна дата/час: {e}")
 
-    return {"text": text, "date": dt}
+        if dt <= now:
+            if explicit_year:
+                # год задан явно — прошлое не принимаем
+                raise ValueError("Ця дата/час уже минули. Вкажіть майбутній момент.")
+            else:
+                # год не задан — переносим на следующий корректный год
+                next_year = year + 1
+                if month == 2 and day == 29:
+                    while not calendar.isleap(next_year):
+                        next_year += 1
+                dt = datetime(next_year, month, day, hour, minute, tzinfo=DEFAULT_TZ)
+    elif mode == "daily":
+        m = RE_DAILY.match(last)
+        if not m:
+            raise ValueError("Останній рядок має бути 'HH:MM'.")
+        hour, minute = int(m.group(1)), int(m.group(2))
+        dt = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+        if dt <= now:
+            dt += timedelta(days=1)
+    else:
+        raise ValueError("Невідомий режим (очікується 'one' або 'daily').")
+
+    return {"text": body_text, "iso": dt.isoformat()}
 
 
-async def create_reminder(tg_id, data):
-    path = Path(BASE_DIR, "misc", "reminders.json")
+async def iso_to_human(s: str, tz: timezone | None = None) -> str:
+    if s.endswith('Z'):
+        s = s[:-1] + '+00:00'
+    dt = datetime.fromisoformat(s)
+    if tz is not None:
+        dt = dt.astimezone(tz)
+    return dt.strftime('%d.%m.%y %H:%M') 
+
+
+
+async def create_reminder(type, data):
+    path = Path(BASE_DIR, "misc", "jokes_util", "reminders.json")
 
     if not path.exists():
         path.write_text("{}", encoding="utf-8")
-
-    payload = dict(data)
-    if isinstance(payload.get("date"), datetime):
-        payload["date"] = payload["date"].isoformat()
 
     # читаем JSON (если битый — начинаем заново)
     try:
@@ -302,10 +344,9 @@ async def create_reminder(tg_id, data):
     except (json.JSONDecodeError, FileNotFoundError):
         json_data = {}
 
-    # ключи в JSON должны быть строками
-    key = str(tg_id)
-    json_data.setdefault(key, []).append(payload)
+    json_data.setdefault(type, []).append(data)
 
     # записываем обратно
     with open(path, "w", encoding="utf-8") as f:
         json.dump(json_data, f, ensure_ascii=False, indent=4)
+

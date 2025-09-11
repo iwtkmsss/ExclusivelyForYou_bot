@@ -9,7 +9,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from handlers.user import bot_callback, bot_messages, start_command
 from handlers.user.start_menu import jokes_call, shop_call, character_call
 from handlers.admin import command
-from misc import TOKEN, BDB
+from misc import TOKEN, BDB, reminder_loop
 
 
 async def main():
@@ -27,6 +27,9 @@ async def main():
     )
 
     await bot.delete_webhook(drop_pending_updates=True)
+    
+    asyncio.create_task(reminder_loop(bot))
+
     await dp.start_polling(bot)
 
 

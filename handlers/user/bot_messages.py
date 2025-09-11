@@ -7,7 +7,8 @@ from aiogram.types import Message, BufferedInputFile
 from aiogram.fsm.context import FSMContext
 
 from keyboards import personal_data_display_kb, compatibility_data_display_kb
-from misc import MatrixOfDestiny, loading_message, T, Reminders, parse_reminder, DEFAULT_TZ
+from misc import MatrixOfDestiny, loading_message, T, Reminders, parse_reminder_message, DEFAULT_TZ, iso_to_human, \
+create_reminder
 from misc.jokes_util.util import get_personal_matrix_data, svg_b64_to_png_bytes, get_compatibility_matrix_data
 
 router = Router()
@@ -128,61 +129,27 @@ async def compatibility_message(message: Message, state: FSMContext, bot: Bot):
         await message.answer(T.ErrorMessage)
 
 
-def _next_daily_run(now: datetime, hh: int, mm: int) -> datetime:
-    # Возвращает ближайший запуск сегодня/завтра с указанным временем (tz берём из now)
-    target = now.replace(hour=hh, minute=mm, second=0, microsecond=0)
-    if target <= now:
-        target += timedelta(days=1)
-    return target
-
-def _fmt_when(dt: datetime, mode: str) -> str:
-    if mode == "daily":
-        return f"щодня о {dt:%H:%M} (перше спрацювання {dt:%d.%m.%Y})"
-    return f"{dt:%d.%m.%Y о %H:%M}"
-
-
 @router.message(F.text, Reminders.Setting)
 async def reminders_message(message: Message, state: FSMContext):
-    try:
-        parsed = parse_reminder(message.text)
-    except ValueError as e:
-        await message.reply(
-            "❌ " + str(e) + "\n\nПриклади:\n"
-            "• Текст…\\n14:25  (щодня о 14:25)\n"
-            "• Текст…\\n09.09 14:25  (9 вересня о 14:25)\n"
-            "• Текст…\\n09.09.2025 14:25"
-        )
-        return  
-
     state_data = await state.get_data()
-    mode =  state_data.get("type")
+    mode = state_data.get("mode", "one")  # 'one' або 'daily'
 
-    now = message.date if message.date.tzinfo else datetime.now(timezone.utc)
-    dt = parsed["date"]
-    if dt.tzinfo is None:
-        # приклеим ту же зону, что у now (чаще всего UTC)
-        dt = dt.replace(tzinfo=now.tzinfo)
-    if mode == "daily":
-        # ежедневное: берём только время и считаем ближайшее срабатывание
-        dt = _next_daily_run(now, dt.hour, dt.minute)
-    else:
-        # разовое: гарантируем будущее; если уже прошло — подсказка
-        if dt <= now:
-            await message.reply("❌ Дата/час уже минули. Укажіть майбутній момент.")
-            return
+    try:
+        parsed = parse_reminder_message(message.text, mode)
+    except ValueError as e:
+        await message.reply("❌ " + str(e))
+        return
 
-    item = {
-        "text": parsed["text"],
-        "run_at": dt.isoformat(),        # хранить удобно в ISO
-        "mode": mode,                    # "daily" | "one"
-        "created_at": now.isoformat(),
-    }
-    await message.answer(
-        "✅ Нагадування збережено.\n\n"
-        f"<b>{parsed['text']}</b>\n{_fmt_when(dt, mode)}",
-        parse_mode="HTML"
-    )
-    await state.clear()
+    # parsed["iso"] — сохраняем; parsed["dt"] — если нужно объект datetime
+    await message.reply(f"✅ Ок\nТекст:\n{parsed['text']}\n\nКоли: {await iso_to_human(parsed['iso'])}")
+
+    data = {
+        "tg_id": message.from_user.id,
+        "text": parsed['text'],
+        "date": parsed['iso'],
+        "last_action": None
+    } 
+    await create_reminder(mode, data)
 
 
 # @router.message(F.photo)
