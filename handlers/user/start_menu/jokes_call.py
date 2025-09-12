@@ -7,9 +7,10 @@ from aiogram.fsm.context import FSMContext
 
 from keyboards import (jokes_kb, good_mood_kb, tarological_kb, recipes_kb, reminder_kb, \
                        support_kb, games_kb, premium_recipes_kb, back_to_premium_recipes_kb, food_recipe_kb,
-                       all_horoscope_kb, back_to_all_horoscope_kb, matrix_destiny_kb, back_to_m_d_personal_kb,
+                       all_horoscope_kb, back_to_all_horoscope_kb, matrix_destiny_kb,
                        matrix_destiny_personal_kb, personal_data_display_kb, dd_personal_qualities_kb,
-                       back_to_personal_qualities_kb, compatibility_data_display_kb, back_to_reminder_kb)
+                       back_to_personal_qualities_kb, compatibility_data_display_kb, back_to_reminder_kb, 
+                       back_to_matrix_destiny_kb)
 from misc import get_random_premium_recipe, get_random_json_food, T, DEFAULT_PHOTO_FOR_RECIPE, Paginations, \
     loading_message, get_scraping_zodiac_sign, t_zodiac_signs, MatrixOfDestiny, Reminders
 from misc.jokes_util.util import chakra_matrix_html, get_personal_matrix_data, get_compatibility_matrix_data
@@ -36,7 +37,7 @@ async def good_mood_call(callback_query: CallbackQuery):
 @router.callback_query(F.data == "tarological")
 async def tarological_call(callback_query: CallbackQuery):
     user_id = callback_query.from_user.id
-    text = T.tarological
+    text = T.Tarological
 
     await callback_query.message.edit_text(text=text,
                                            reply_markup=await tarological_kb(user_id))
@@ -401,7 +402,7 @@ async def matrix_destiny__call(callback_query: CallbackQuery, state: FSMContext)
         await state.update_data(message_id=callback_query.message.message_id)
 
         await callback_query.message.edit_text(text=T.MatrixOfDestinyCompatibility,
-                                               reply_markup=back_to_all_horoscope_kb)
+                                               reply_markup=back_to_matrix_destiny_kb)
     else:
         pass
 
@@ -421,7 +422,7 @@ async def m_d_personal_call(callback_query: CallbackQuery, state: FSMContext):
         await state.update_data(gender="f")
 
     await callback_query.message.edit_text(text=T.MatrixOfDestinyPersonal,
-                                           reply_markup=back_to_m_d_personal_kb)
+                                           reply_markup=back_to_matrix_destiny_kb)
     await state.update_data(msg_id=callback_query.message.message_id)
 
 
@@ -611,14 +612,6 @@ async def one_reminder_call(callback_query: CallbackQuery, state: FSMContext):
 
     await state.set_state(Reminders.Setting)
     await state.update_data(mode="one")
-
-    await callback_query.message.edit_text(text=text,
-                                reply_markup=back_to_reminder_kb)
-
-
-@router.callback_query(F.data == "my_reminder")
-async def my_reminder_call(callback_query: CallbackQuery):
-    text = T.MyReminder
 
     await callback_query.message.edit_text(text=text,
                                 reply_markup=back_to_reminder_kb)

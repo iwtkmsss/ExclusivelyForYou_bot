@@ -4,14 +4,14 @@ from aiogram.types import Message
 
 from keyboards import start_kb
 
-from misc import BDB
+from misc import BDB, T
 
 router = Router()
 
 
 @router.message(CommandStart())
 async def cmd_start(message: Message):
-    start_text = "START TEXT"
+    start_text = T.StartText
     approve_users = [int(x.strip()) for x in BDB.get_setting("tg_id").split(",")]
     user_id = message.from_user.id
     

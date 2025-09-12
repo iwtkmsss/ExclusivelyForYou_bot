@@ -279,20 +279,23 @@ from misc.jokes_util.util import get_personal_matrix_data
 #     scraping_url()
 
 
+total_lines = 0
+total_chars = 0
 
-# total = 0
+for root, dirs, files in os.walk(".", topdown=True):
+    # ігноруємо папку .venv
+    dirs[:] = [d for d in dirs if d != "venv"]
+    for name in files:
+        if name.endswith(".py") and name != "__init__.py" and name != "test.py":
+            path = os.path.join(root, name)
+            try:
+                with open(path, "r", encoding="utf-8", errors="ignore") as f:
+                    content = f.read()
+                    total_lines += content.count('\n') + 1  # рахуємо рядки
+                    total_chars += len(content)  # рахуємо символи
+            except Exception:
+                pass
 
-# for root, dirs, files in os.walk(".", topdown=True):
-#     # ігноруємо папку .venv
-#     dirs[:] = [d for d in dirs if d != ".venv"]
-#     for name in files:
-#         if name.endswith(".py") and name != "__init__.py":
-#             path = os.path.join(root, name)
-#             try:
-#                 with open(path, "r", encoding="utf-8", errors="ignore") as f:
-#                     total += sum(1 for _ in f)
-#             except Exception:
-#                 pass
-
-# print(total)
+print(f"Всього рядків: {total_lines}")
+print(f"Всього символів: {total_chars}")
 
