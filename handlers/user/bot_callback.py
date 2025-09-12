@@ -12,7 +12,7 @@ router = Router()
 async def shop_call(callback_query: CallbackQuery):
     start_text = T.StartText
 
-    await callback_query.message.edit_text(text=start_text, reply_markup=start_kb)
+    await callback_query.message.edit_text(text=start_text, reply_markup=start_kb, disable_web_page_preview=True)
 
 
 @router.callback_query(F.data == "back_to_jokes")

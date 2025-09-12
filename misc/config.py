@@ -10,6 +10,7 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 TOKEN = os.getenv('BOT_TOKEN')
+TELEGA_PH = os.getenv('TELEGA_PH')
 
 DEFAULT_TZ = timezone(timedelta(hours=3), name="UTC+03")
 
